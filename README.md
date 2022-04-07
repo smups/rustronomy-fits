@@ -7,6 +7,9 @@
 _This crate is part of the Rustronomy Project_
 Rustronomy-fits provides I/O tools for reading, writing and parsing FITS files. It is currently still under heavy development.
 
+> This repository was recently moved from rustronomy to the dedicated
+rustronomy-fits repo!
+
 ### Features/Roadmap
 Rustronomy-fits will support the following features (features marked with ✔️ have already been implemented):
 
@@ -34,7 +37,7 @@ rustronomy-fits = "0.1.0"
 ```
 To use Rustronomy-fits in a Jupyter notebook, execute a cell containing the following code:
 ```rust
-:dep rustronomy-fits = {git = "https://github.com/smups/rustronomy"}
+:dep rustronomy-fits = {git = "https://github.com/smups/rustronomy-fits"}
 ```
 ### Short example: Importing a FITS image as a ndarray
 In this example, we create a Fits struct using the `open()` method, which takes
