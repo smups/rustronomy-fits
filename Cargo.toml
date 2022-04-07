@@ -25,7 +25,8 @@ repository = "https://github.com/smups/rustronomy/"
 authors = ["Raúl Wolters <rawolters11@gmail.com>"]
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
+path = "src/lib.rs"
 
 [dependencies]
 simple-error = "0.2"
@@ -39,3 +40,6 @@ rustronomy-core = {git = "https://github.com/smups/rustronomy"}
 [dev-dependencies]
 dirs = "4"
 progressing = "3"
+
+[profile.release]
+strip = "debuginfo"
