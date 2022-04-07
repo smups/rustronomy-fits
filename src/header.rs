@@ -18,7 +18,6 @@
 */
 
 use std::{
-    collections::HashMap,
     error::Error,
     fmt::{self, Display},
     str::FromStr,
@@ -26,6 +25,7 @@ use std::{
 };
 
 use chrono::{Utc, Datelike};
+use indexmap::IndexMap;
 use simple_error::SimpleError;
 
 use crate::raw::{
@@ -38,25 +38,13 @@ use crate::raw::{
 const BLOCK_SIZE: usize = crate::BLOCK_SIZE;
 
 /*
-    Public version of the header is a Simple HashMap with a wrapper around it
+    Public version of the header is a Simple IndexMap with a wrapper around it
     for creating a Header from a FITS HDU or the other way around.
 */
 #[derive(Debug, Clone)]
 pub struct Header {
-    records: HashMap<Rc<String>, KeywordRecord>,
+    records: IndexMap<Rc<String>, KeywordRecord>,
     block_len: usize
-}
-
-impl Display for Header {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f,">================================<|FITS Header|>================================")?;
-        writeln!(f, ">Size in FITS blocks: {}", self.block_len)?;
-        for (_, record) in &self.records {
-            writeln!(f, ">  {record}")?;
-        }
-        writeln!(f,">===============================================================================")?;
-        Ok(())
-    }
 }
 
 impl Header {
@@ -90,7 +78,7 @@ impl Header {
         -> Result<Self, Box<dyn Error>>
     {
         //Parse the Keywordrecords to plain Key-Data pairs
-        let mut parsed_map: HashMap<Rc<String>, KeywordRecord> = HashMap::new();
+        let mut parsed_map: IndexMap<Rc<String>, KeywordRecord> = IndexMap::new();
 
         //Keep track of the last keyword for multi-keyword strings
         let mut last_keyword = String::from("");
@@ -169,7 +157,7 @@ impl Header {
             bare headers!
         */
         let mut header = Header {
-            records: HashMap::new(),
+            records: IndexMap::new(),
             block_len: 0 //contains nothing
         };
         //we modified the header, so we should indicate that!
@@ -216,7 +204,7 @@ impl Header {
             now.day()
         );
 
-        //create the keyword record and update the internal hashmap
+        //create the keyword record and update the internal IndexMap
         let key = Rc::new(String::from("DATE"));
         let date = KeywordRecord::from_string(
             key.clone(),
@@ -249,5 +237,19 @@ impl Header {
 impl BlockSized for Header {
     fn get_block_len(&self) -> usize {
         self.block_len
+    }
+}
+
+impl Display for Header {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f,">================================<|FITS Header|>================================")?;
+        writeln!(f, ">Size in FITS blocks: {}", self.block_len)?;
+        for (_, record) in &self.records {
+            writeln!(f, ">  {record}")?;
+            //Not flushing the formatter causes issues with the ordering of the
+            //keyword records!
+        }
+        writeln!(f,">===============================================================================")?;
+        Ok(())
     }
 }
