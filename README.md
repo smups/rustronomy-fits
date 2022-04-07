@@ -14,17 +14,20 @@ _Reading Fits Files_
 - ✔️ Parsing FITS headers and keyword records
 - Parsing data in the primary HDU
   - ✔️ Images
-  - ❌ Tables
+  - ✔️ Tables
+  - ❌ Binary Tables
   - ❌ Random Groups
 - Parsing Extensions
   - ✔️ Images
-  - ❌ Tables
+  - ✔️ Tables
+  - ❌ Binary Tables
  
 _Writing Fits Files_
 - ✔️ Writing existing FITS files to disk
 - Constructing a HDU (including auto header) from
   - ❌ an ndarray (to an Image)
   - ❌ a table (to a table)
+  - ❌ a table (to a binary table)
 
 # Quickstart
 To use Rustronomy-fits in a cargo project, add the rustronomy-fits crate as a dependency to your `Cargo.toml` file:
@@ -34,7 +37,7 @@ rustronomy-fits = "0.1.0"
 ```
 To use Rustronomy-fits in a Jupyter notebook, execute a cell containing the following code:
 ```rust
-:dep rustronomy-fits = {git = "https://github.com/smups/rustronomy"}
+:dep rustronomy-fits = {git = "https://github.com/smups/rustronomy-fits"}
 ```
 ### Short example: Importing a FITS image as a ndarray
 In this example, we create a Fits struct using the `open()` method, which takes
@@ -46,8 +49,8 @@ the unwrapped Image.
 ```rust
 use rustronomy_fits::prelude::*;
 
-let fits = Fits::open(&Path::from("somefile.fits"))?;
-let data_array = match fits.get_hdu(1).unwrap().get_data() {
+let fits = Fits::open("somefile.fits")?;
+let data_array_1 = match fits.get_hdu(1).unwrap().get_data() {
   Extension::Image(img) => img.as_f64_array()?,
   _ => panic!()
 }; 
