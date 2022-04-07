@@ -16,10 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
+use crate::hdu_err::InvalidRecordValueError;
 
-use std::error::Error;
-
-use simple_error::SimpleError;
+const VALID_BITPIX_VALUES: [&'static str; 6] = [
+    "8", "16", "32", "64", "-32", "-64"
+];
 
 #[derive(Debug)]
 pub enum Bitpix {
@@ -32,7 +33,9 @@ pub enum Bitpix {
 }
 
 impl Bitpix {
-    pub(crate) fn from_code(code: &isize) -> Result<Bitpix, Box<dyn Error>> {
+    pub(crate) fn from_code(code: &isize)
+        -> Result<Bitpix, InvalidRecordValueError>
+    {
         match code {
             8 => Ok(Bitpix::Byte),
             16 => Ok(Bitpix::Short),
@@ -40,9 +43,9 @@ impl Bitpix {
             64 => Ok(Bitpix::Long),
             -32 => Ok(Bitpix::Spf),
             -64 => Ok(Bitpix::Dpf),
-            other => Err(Box::new(SimpleError::new(
-                format!("Encountered invalid bitpix value ({})", other)
-            ))) 
+            other => Err(InvalidRecordValueError::new(
+                "BITPIX", &code.to_string(), &VALID_BITPIX_VALUES)
+            ) 
         }
     }
 

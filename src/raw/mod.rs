@@ -18,9 +18,10 @@
 */
 
 //Module structure
-pub mod raw_io;
-pub mod keyword_record;
-pub mod header_block;
+pub(crate) mod raw_io;
+pub(crate) mod keyword_record;
+pub(crate) mod header_block;
+pub(crate) mod table_entry_format;
 
 pub(crate) trait BlockSized {
     //Internal crate used for writing FITS files, not part of API

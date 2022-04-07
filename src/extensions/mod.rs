@@ -23,13 +23,17 @@ use simple_error::SimpleError;
 
 use crate::raw::{BlockSized, raw_io::RawFitsWriter};
 
-use self::image::{TypedImage, ImgParser};
+use self::{
+    image::{TypedImage, ImgParser},
+    table::{Table, TblParser}
+};
 
 //FITS standard-conforming extensions
 pub mod image;
+pub mod table;
 
 #[derive(Debug, Clone)]
-pub enum Extension {
+pub enum Extension{
     /*  THIS IS PART OF THE USER-FACING API
         Users receive a FITS struct, within which they may access the header and
         data. The data is provided as a variant of this Extension struct. 
@@ -37,14 +41,16 @@ pub enum Extension {
         All implementations of this struct are however internal!
     */
     Corrupted,
-    Image(TypedImage)
+    Image(TypedImage),
+    Table(Table)
 }
 
 impl BlockSized for Extension {
     fn get_block_len(&self) -> usize {
         match &self {
             Self::Corrupted => 0, //corrupted data is disregarded
-            Self::Image(img) => img.get_block_len()
+            Self::Image(img) => img.get_block_len(),
+            Self::Table(tbl) => tbl.get_block_len()
         }
     }
 }
@@ -53,7 +59,8 @@ impl Display for Extension {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             Self::Corrupted => write!(f, "(CORRUPTED_DATA)"),
-            Self::Image(img) => write!(f, "(IMAGE) {img}")
+            Self::Image(img) => write!(f, "{}", img.xprint()),
+            Self::Table(tbl) => write!(f, "{}", tbl.xprint())
         }
     }
 }
@@ -65,10 +72,18 @@ impl Extension {
         match self {
             Self::Corrupted => { return Err(Box::new(SimpleError::new(
                 "Error while writing FITS file: tried to write corrupted data!"
-            )));}
+            )));},
             Self::Image(img) => {
                 ImgParser::encode_img(img, writer)
+            },
+            Self::Table(tbl) => {
+                TblParser::encode_tbl(tbl, writer)
             }
         }
     }
+}
+
+pub(crate) trait ExtensionPrint{
+    //This tiny trait is used for printing concise descriptions of Extensions
+    fn xprint(&self) -> String;
 }

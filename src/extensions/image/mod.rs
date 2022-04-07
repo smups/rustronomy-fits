@@ -18,29 +18,11 @@
 */
 
 //Module structure
-mod header;
-mod bitpix;
-mod fits;
-mod extensions;
-mod raw;
-mod header_data_unit;
-mod err;
+mod generic_image;
+mod typed_image;
+mod image_parser;
 
-//Constants defined by the FITS standard
-pub(crate) const BLOCK_SIZE: usize = 2880;
-
-//Public api re-exports
-pub use fits::Fits as Fits;
-pub use header::Header as Header;
-pub use header_data_unit::HeaderDataUnit as HeaderDataUnit;
-pub use extensions::Extension as Extension;
-pub use err::*;
-
-//prelude (kinda pointless rn but whatev)
-pub mod prelude {
-    pub use crate::err::*;
-    pub use crate::fits::Fits as Fits;
-    pub use crate::header::Header as Header;
-    pub use crate::header_data_unit::HeaderDataUnit as HeaderDataUnit;
-    pub use crate::extensions::Extension as Extension;
-}
+//re-exports for readability
+pub(crate) use image_parser::ImgParser as ImgParser;
+pub use typed_image::TypedImage as TypedImage;
+pub use generic_image::Image as Image;

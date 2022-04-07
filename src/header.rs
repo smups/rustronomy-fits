@@ -26,13 +26,15 @@ use std::{
 };
 
 use chrono::{Utc, Datelike};
-use simple_error::SimpleError;
 
-use crate::raw::{
-    header_block::HeaderBlock,
-    raw_io::{RawFitsReader, RawFitsWriter},
-    BlockSized,
-    keyword_record::KeywordRecord
+use crate::{
+    raw::{
+        header_block::HeaderBlock,
+        raw_io::{RawFitsReader, RawFitsWriter},
+        BlockSized,
+        keyword_record::KeywordRecord
+    },
+    hdu_err::MissingRecordError
 };
 
 const BLOCK_SIZE: usize = crate::BLOCK_SIZE;
@@ -234,9 +236,7 @@ impl Header {
         <T as FromStr>::Err: 'static + Error
     {
         match self.get_value(&keyword.to_string()) {
-            None => Err(Box::new(SimpleError::new(
-                format!("Error while looking for keyword: keyword [{}] not present in FITS file!", keyword)
-            ))),
+            None => Err(MissingRecordError::new(keyword))?,
             Some(val) => Ok(str::parse::<T>(val)?)
         }
     }

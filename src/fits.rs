@@ -33,13 +33,13 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Fits {
+pub struct Fits{
     hdus: Vec<HeaderDataUnit>,
     reader: Option<RawFitsReader>,
     writer: Option<RawFitsWriter>
 }
 
-impl Fits {
+impl Fits{
 
     pub fn open(path: &Path) -> Result<Self, Box<dyn Error>> {
         //(1) Construct a RawFitsReader

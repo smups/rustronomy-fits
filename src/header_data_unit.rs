@@ -24,10 +24,15 @@ use simple_error::SimpleError;
 
 use crate::{
     header::Header,
-    extensions::{Extension, image::ImgParser},
+    extensions::{Extension, image::ImgParser, table::TblParser},
     raw::{raw_io::{RawFitsReader, RawFitsWriter}, BlockSized},
-    bitpix::Bitpix
+    bitpix::Bitpix,
+    hdu_err::InvalidRecordValueError
 };
+
+const VALID_EXTENSION_NAMES: [&'static str; 3] = [
+    "'IMAGE   '", "'TABLE   '", "'BINTABLE'"
+];
 
 #[derive(Debug, Clone)]
 pub struct HeaderDataUnit {
@@ -35,7 +40,7 @@ pub struct HeaderDataUnit {
     data: Option<Extension>
 }
 
-impl HeaderDataUnit {
+impl HeaderDataUnit{
 
     /*
         INTERNAL CODE
@@ -70,17 +75,97 @@ impl HeaderDataUnit {
                 */
                 match extension_type.as_str() {
                     "'IMAGE   '" => Some(Self::read_img(raw, &header)?),
-                    kw @ "'TABLE   '" => Err(Self::not_impl(kw))?,
+                    _kw @ "'TABLE   '" => Some(Self::read_table(raw, &header)?),
                     kw @ "'BINTABLE'" => Err(Self::not_impl(kw))?,
-                    kw => Err(Box::new(SimpleError::new(
-                        format!("Error while constructing HDU: {kw} is not a valid extension type!")
-                    )))?
+                    kw => Err(InvalidRecordValueError::new(
+                        "XTENSION", kw, &VALID_EXTENSION_NAMES
+                    ))?
                 }
             }
         };
         
         //(3) return complete HDU
         Ok(HeaderDataUnit {header: header, data: extension})
+    }
+
+    fn read_table(raw: &mut RawFitsReader, header: &Header)
+        -> Result<Extension, Box<dyn Error>>
+    {
+        /*
+            To parse a table we need to know the following keywords:
+                TFIELDS => #fields in a row
+                NAXIS1 => #characters in a row
+                NAXIS2 => #rows in the table
+                TBCOL{i} => starting index of field i
+                TFORM{i} => data format of field i
+                TTYPE{i} => name of field i (not required)
+            In addition, we require the following keywords to have been set to:
+                NAXIS == 2
+                BITPIX == 8
+                PCOUNT == 0
+                GCOUNT == 1
+            We obtain these values from the header
+        */
+
+        //(1) check that the mandatory keywords have been set properly
+        let naxis: usize = header.get_value_as("NAXIS")?;
+        let bitpix: isize = header.get_value_as("BITPIX")?;
+        let pcount: usize = header.get_value_as("PCOUNT")?;
+        let gcount: usize = header.get_value_as("GCOUNT")?;
+        //Here come the if statements :c
+        if naxis != 2 {Err(InvalidRecordValueError::new(
+            "NAXIS", &format!("{naxis}"), &["2"]
+        ))?} if bitpix != 8 {Err(InvalidRecordValueError::new(
+            "BITPIX", &format!("{bitpix}"), &["8"]
+        ))?} if pcount != 0 {Err(InvalidRecordValueError::new(
+            "PCOUNT", &format!("{pcount}"), &["0"]
+        ))?} if gcount != 1 {Err(InvalidRecordValueError::new(
+            "GCOUNT", &format!("{gcount}"), &["1"]
+        ))?}
+
+        //(2) Obtain the keywords required for decoding the header
+        let nfields: usize = header.get_value_as("TFIELDS")?;
+        let row_len: usize = header.get_value_as("NAXIS1")?;
+        let nrows: usize = header.get_value_as("NAXIS2")?;
+
+        let mut row_index_col_start: Vec<usize> = Vec::new();
+        for i in 1..=nfields {
+            row_index_col_start.push(
+                //We have to substract 1 since FITS indices start at 1 rather
+                //than 0
+                header.get_value_as::<usize>(&format!("TBCOL{i}"))? - 1
+            );
+        }
+
+        let mut field_format: Vec<String> = Vec::new();
+        for i in 1..=nfields {
+            field_format.push(header.get_value_as(&format!("TFORM{i}"))?)
+        }
+
+        let labels = match header.get_value("TTYPE1") {
+            None => None,
+            Some(_) => {
+                let mut tmp: Vec<String> = Vec::new();
+                for i in 1..=nfields {
+                    tmp.push(header.get_value_as(&format!("TTYPE{i}"))?);
+                }
+                Some(tmp)
+            }
+        };
+
+        //(3) Decode the image using the table parser
+        let tbl = TblParser::decode_tbl(
+            raw,
+            row_len,
+            nrows,
+            nfields,
+            row_index_col_start,
+            field_format,
+            labels
+        )?;
+
+        //(R) return the completed table
+        Ok(tbl)
     }
 
     fn read_img(raw: &mut RawFitsReader, header: &Header)
@@ -92,7 +177,7 @@ impl HeaderDataUnit {
         //Axis sizes are encoded in the NAXIS{i} keywords
         let mut axes: Vec<usize> = Vec::new();
         for i in 1..=naxis {
-            axes.push(header.get_value_as(format!("NAXIS{i}").as_str())?);
+            axes.push(header.get_value_as(&format!("NAXIS{i}"))?);
         }
 
         //Datatype is encoded in the BITPIX keyword
@@ -138,7 +223,7 @@ impl HeaderDataUnit {
     }
 
     pub fn pretty_print_header(&self) -> String {
-        format!("[Header] - size: {}, #records: {}",
+        format!("[Header] - #records: {}, size: {}",
             self.header.get_block_len(), self.header.get_num_records()
         )
     }
@@ -148,7 +233,7 @@ impl HeaderDataUnit {
             None => "(NO_DATA)".into(),
             Some(data) => format!("{data}").into()
         };
-        format!("[Data] - {data_string}")
+        format!("[Data] {data_string}")
     }
 }
 
