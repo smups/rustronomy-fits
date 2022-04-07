@@ -25,7 +25,7 @@ repository = "https://github.com/smups/rustronomy/"
 authors = ["Raúl Wolters <rawolters11@gmail.com>"]
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 simple-error = "0.2"
