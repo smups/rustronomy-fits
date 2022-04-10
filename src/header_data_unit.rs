@@ -24,7 +24,7 @@ use simple_error::SimpleError;
 
 use crate::{
     header::Header,
-    extensions::{Extension, image::ImgParser, table::TblParser},
+    extensions::{Extension, image::ImgParser, table::AsciiTblParser},
     raw::{raw_io::{RawFitsReader, RawFitsWriter}, BlockSized},
     bitpix::Bitpix,
     hdu_err::InvalidRecordValueError
@@ -170,7 +170,7 @@ impl HeaderDataUnit{
         };
 
         //(3) Decode the image using the table parser
-        let tbl = TblParser::decode_tbl(
+        let tbl = AsciiTblParser::decode_tbl(
             raw,
             row_len,
             nrows,

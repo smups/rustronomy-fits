@@ -34,7 +34,7 @@ fn read_test() {
     //Inspect the table
     let (_h, xt) = fits.remove_hdu(1).unwrap().to_parts();
     let tbl = match xt.unwrap() {
-        rsf::Extension::Table(tbl) => tbl,
+        rsf::Extension::AsciiTable(tbl) => tbl,
         _ => panic!()
     };
     println!("{tbl}");

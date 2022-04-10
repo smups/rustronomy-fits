@@ -16,15 +16,3 @@
     You should have received a copy of the GNU General Public License
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-//Module Structure
-pub mod table_entry;
-pub mod column;
-pub mod ascii_table;
-pub mod bin_table;
-pub(crate) mod ascii_tbl_parser;
-
-//Re-exports for readability
-pub use table_entry::TableEntry as TableEntry;
-pub use ascii_table::AsciiTable as AsciiTable;
-pub(crate) use ascii_tbl_parser::AsciiTblParser as AsciiTblParser;

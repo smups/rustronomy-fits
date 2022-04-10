@@ -39,8 +39,8 @@ use super::{AsciiTable, TableEntry, column::Column};
 use rayon::prelude::*;
 use simple_error::{SimpleError};
 
-pub struct TblParser{}
-impl TblParser{
+pub struct AsciiTblParser{}
+impl AsciiTblParser{
 
     pub(crate) fn decode_tbl(
         reader: &mut RawFitsReader,
@@ -128,7 +128,7 @@ impl TblParser{
         for row in fmtd_rows {tbl.add_row(row)?;}
 
         //(R) return the filled table
-        Ok(Extension::Table(tbl))
+        Ok(Extension::AsciiTable(tbl))
     }
 
     fn setup_table(fmts: &Vec<TableEntryFormat>, labels: Option<Vec<String>>, size: usize)

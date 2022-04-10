@@ -25,7 +25,7 @@ use crate::raw::{BlockSized, raw_io::RawFitsWriter};
 
 use self::{
     image::{TypedImage, ImgParser},
-    table::{AsciiTable, TblParser}
+    table::{AsciiTable, AsciiTblParser}
 };
 
 //FITS standard-conforming extensions
@@ -42,7 +42,7 @@ pub enum Extension{
     */
     Corrupted,
     Image(TypedImage),
-    Table(AsciiTable)
+    AsciiTable(AsciiTable)
 }
 
 impl BlockSized for Extension {
@@ -50,7 +50,7 @@ impl BlockSized for Extension {
         match &self {
             Self::Corrupted => 0, //corrupted data is disregarded
             Self::Image(img) => img.get_block_len(),
-            Self::Table(tbl) => tbl.get_block_len()
+            Self::AsciiTable(tbl) => tbl.get_block_len()
         }
     }
 }
@@ -60,7 +60,7 @@ impl Display for Extension {
         match &self {
             Self::Corrupted => write!(f, "(CORRUPTED_DATA)"),
             Self::Image(img) => write!(f, "{}", img.xprint()),
-            Self::Table(tbl) => write!(f, "{}", tbl.xprint())
+            Self::AsciiTable(tbl) => write!(f, "{}", tbl.xprint())
         }
     }
 }
@@ -76,8 +76,8 @@ impl Extension {
             Self::Image(img) => {
                 ImgParser::encode_img(img, writer)
             },
-            Self::Table(tbl) => {
-                TblParser::encode_tbl(tbl, writer)
+            Self::AsciiTable(tbl) => {
+                AsciiTblParser::encode_tbl(tbl, writer)
             }
         }
     }
