@@ -21,6 +21,7 @@ use std::{error::Error, fmt::Debug};
 
 use dyn_clone::{DynClone, clone_trait_object};
 use simple_error::SimpleError;
+use rayon::prelude::*;
 
 use super::TableEntry;
 
@@ -39,7 +40,7 @@ pub trait AsciiCol: Debug + DynClone {
     fn remove_entry(&mut self, index: usize) -> Option<TableEntry>;
 
     //Funcs for properly encoding/decoding
-    fn to_ascii_vec(self) -> Vec<String>;
+    fn to_ascii_vec(&self) -> Vec<String>;
 
     //Other funcs
     fn len(&self) -> usize;
@@ -122,8 +123,8 @@ impl AsciiCol for Column<String> {
 
     fn len(&self) -> usize {self.container.len()}
 
-    fn to_ascii_vec(self) -> Vec<String> {
-        self.container.into_iter()
+    fn to_ascii_vec(&self) -> Vec<String> {
+        self.container.par_iter()
             .map(|primitive| primitive.to_string())
             .collect()
     }
@@ -196,8 +197,8 @@ impl AsciiCol for Column<i64> {
 
     fn len(&self) -> usize {self.container.len()}
 
-    fn to_ascii_vec(self) -> Vec<String> {
-        self.container.into_iter()
+    fn to_ascii_vec(&self) -> Vec<String> {
+        self.container.par_iter()
             .map(|primitive| primitive.to_string())
             .collect()
     }
@@ -270,8 +271,8 @@ impl AsciiCol for Column<f64> {
 
     fn len(&self) -> usize {self.container.len()}
 
-    fn to_ascii_vec(self) -> Vec<String> {
-        self.container.into_iter()
+    fn to_ascii_vec(&self) -> Vec<String> {
+        self.container.par_iter()
             .map(|primitive| primitive.to_string())
             .collect()
     }

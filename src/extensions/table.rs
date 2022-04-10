@@ -20,10 +20,10 @@
 //Module Structure
 pub mod table_entry;
 pub mod column;
-pub mod table;
+pub mod ascii_table;
 pub(crate) mod table_parser;
 
 //Re-exports for readability
 pub use table_entry::TableEntry as TableEntry;
-pub use table::Table as Table;
+pub use ascii_table::AsciiTable as AsciiTable;
 pub(crate) use table_parser::TblParser as TblParser;

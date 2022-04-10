@@ -25,7 +25,7 @@ use crate::raw::{BlockSized, raw_io::RawFitsWriter};
 
 use self::{
     image::{TypedImage, ImgParser},
-    table::{Table, TblParser}
+    table::{AsciiTable, TblParser}
 };
 
 //FITS standard-conforming extensions
@@ -42,7 +42,7 @@ pub enum Extension{
     */
     Corrupted,
     Image(TypedImage),
-    Table(Table)
+    Table(AsciiTable)
 }
 
 impl BlockSized for Extension {

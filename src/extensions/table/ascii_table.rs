@@ -32,12 +32,12 @@ use super::{column::AsciiCol, TableEntry};
     This is the abstracted user-facing api for tables. The 
 */
 #[derive(Debug, Clone)]
-pub struct Table{
+pub struct AsciiTable{
     cols: Vec<Box<dyn AsciiCol>>,
     block_size: Option<usize>
 }
 
-impl BlockSized for Table {
+impl BlockSized for AsciiTable {
     fn get_block_len(&self) -> usize {
         match self.block_size {
             Some(size) => size,
@@ -50,7 +50,7 @@ impl BlockSized for Table {
     }
 }
 
-impl Display for Table {
+impl Display for AsciiTable {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f,">================================<|FITS Table|>=================================")?;
         writeln!(f, ">Table Layout:")?;
@@ -62,7 +62,7 @@ impl Display for Table {
     }
 }
 
-impl ExtensionPrint for Table {
+impl ExtensionPrint for AsciiTable {
     fn xprint(&self) -> String {
         format!("(TABLE) - #columns: {}, #rows: {}, size: {}",
             self.cols.len(),
@@ -75,13 +75,16 @@ impl ExtensionPrint for Table {
     }
 }
 
-impl Table {
+impl AsciiTable {
 
     /*
         PUBLIC API
     */
 
-    pub fn get_entry(&self, col: usize, row: usize) -> Result<TableEntry, Box<dyn Error>> {
+    pub fn get_entry(&self, col: usize, row: usize)
+        -> Result<TableEntry, Box<dyn Error>>
+    {
+        //returns a reference to an entry in the table, if it exists
         
         //(1) Check if the column index is valid -> if yes, get the column
         if col >= self.cols.len() {return Err(Box::new(SimpleError::new(format!(
@@ -101,6 +104,7 @@ impl Table {
     }
 
     pub fn get_column(&self, index: usize) -> Option<&dyn AsciiCol> {
+        //returns a reference to a column in the table
         match self.cols.get(index) {
             Some(boxed) => Some(boxed.as_ref()),
             None => None
@@ -111,12 +115,14 @@ impl Table {
         INTERNAL FUNCS
     */
     pub(crate) fn new_sized(cols: Vec<Box<dyn AsciiCol>>, size: usize) -> Self {
-        Table { cols: cols, block_size: Some(size) }
+        //creates new table with known blocksize
+        AsciiTable { cols: cols, block_size: Some(size) }
     }
 
     pub(crate) fn add_row(&mut self, row: Vec<TableEntry>)
         -> Result<(), SimpleError>
     {
+        //Adds row to table
         if row.len() != self.cols.len() { return Err(SimpleError::new(
             "Error when adding row to table: number of columns in table and the number of fields in row don't match!"
         ));
@@ -129,5 +135,17 @@ impl Table {
         
         //(R) ok
         Ok(())
+    }
+
+    pub(crate) fn destroy(self) -> Vec<Vec<String>> {
+        //destructs table into columns of strings
+        self.cols.into_iter()
+            .map(|val| val.to_ascii_vec())
+            .collect()
+    }
+
+    pub(crate) fn max_col_len(&self) -> usize {
+        //returns size of longest column in table
+        self.cols.iter().fold(0, |max, col| 0.max(col.len()))
     }
 }

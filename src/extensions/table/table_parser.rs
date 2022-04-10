@@ -34,7 +34,7 @@ use crate::{
     extensions::{Extension, table::column::AsciiCol}
 };
 
-use super::{Table, TableEntry, column::Column};
+use super::{AsciiTable, TableEntry, column::Column};
 
 use rayon::prelude::*;
 use simple_error::{SimpleError};
@@ -132,7 +132,7 @@ impl TblParser{
     }
 
     fn setup_table(fmts: &Vec<TableEntryFormat>, labels: Option<Vec<String>>, size: usize)
-        -> Result<Table, Box<dyn Error>>
+        -> Result<AsciiTable, Box<dyn Error>>
     {
         //(1) Use the column formats to set-up typed columns
         let mut cols = Vec::<Box<dyn AsciiCol>>::new();
@@ -165,7 +165,7 @@ impl TblParser{
         }
 
         //(R) yeet the columns in an (empty) table
-        Ok(Table::new_sized(cols, size))
+        Ok(AsciiTable::new_sized(cols, size))
     }
 
     fn split_row<'a>(raw: &'a[u8], field_start: &'a Vec<usize>, field_len: &'a Vec<usize>)
@@ -180,9 +180,23 @@ impl TblParser{
         Ok(result)
     }
 
-    pub(crate) fn encode_tbl(tbl: Table, writer: &mut RawFitsWriter)
+    pub(crate) fn encode_tbl(tbl: AsciiTable, writer: &mut RawFitsWriter)
         -> Result<(), Box<dyn Error>>
     {
+        /*  Note:
+            This parser assumes that all the necessary keywords to decode a HDU
+            containing a table have already been set while encoding the header
+            of the HDU. All this method does is write the bare table to disk.
+        */
+
+        //(1) All columns must be of the same length in the FITS file. Columns
+        //that are shorter than the longest column must be extended with spaces.
+        let col_len = tbl.max_col_len();
+        let mut string_cols = tbl.destroy();
+        string_cols.iter_mut()
+            .for_each(|col| col.resize_with(col_len, || String::from(" ")));
+
+        
         todo!()
     }
 }
