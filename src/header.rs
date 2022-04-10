@@ -26,7 +26,6 @@ use std::{
 
 use chrono::{Utc, Datelike};
 use indexmap::IndexMap;
-use simple_error::SimpleError;
 
 use crate::{
     raw::{
