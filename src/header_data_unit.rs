@@ -145,11 +145,27 @@ impl HeaderDataUnit{
         let labels = match header.get_value("TTYPE1") {
             None => None,
             Some(_) => {
+                /*
+                    This header contains descriptive keywords for the entries
+                    in the table. Note that the TTYPE{i} keywords are themselves
+                    keywords, and the actual desciptions of the columns are
+                    stored in the header behind these keywords.
+                */
                 let mut tmp: Vec<String> = Vec::new();
                 for i in 1..=nfields {
                     tmp.push(header.get_value_as(&format!("TTYPE{i}"))?);
                 }
-                Some(tmp)
+                Some(//Before we return, we query keywords we've found so far
+                    tmp.into_iter()
+                    .map(|mut ttype_keyword| {
+                        //We still have to strip the keyword of its annoying
+                        //{'keyword   '} syntax
+                        ttype_keyword.remove(0);
+                        ttype_keyword.pop();
+                        header.get_value_as(ttype_keyword.trim())
+                    })
+                    .collect::<Result<Vec<String>, Box<dyn Error>>>()?
+                )
             }
         };
 
