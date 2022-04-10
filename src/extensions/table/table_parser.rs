@@ -31,7 +31,7 @@ use crate::{
         table_entry_format::TableEntryFormat,
         raw_io::{RawFitsReader, RawFitsWriter}
     },
-    Extension, extensions::table::column::Col
+    extensions::{Extension, table::column::AsciiCol}
 };
 
 use super::{Table, TableEntry, column::Column};
@@ -135,7 +135,7 @@ impl TblParser{
         -> Result<Table, Box<dyn Error>>
     {
         //(1) Use the column formats to set-up typed columns
-        let mut cols = Vec::<Box<dyn Col>>::new();
+        let mut cols = Vec::<Box<dyn AsciiCol>>::new();
         for i in 0..fmts.len() {
             match &fmts[i] {
                 TableEntryFormat::Char(_) => {

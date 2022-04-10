@@ -24,19 +24,22 @@ use simple_error::SimpleError;
 
 use super::TableEntry;
 
-pub trait Col: Debug + DynClone {
+pub trait AsciiCol: Debug + DynClone {
     /*  PUBLIC API
         End-users will recieve a Table struct containing boxed columns. They
         may modify the entries in each column, or remove/replace/reorder columns.
         All user interaction with columns is defined in this trait.
     */
 
-    //Entry funcs
+    //Funcs for modifying/adding/removing entries in the column
     fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError>;
     fn pop_entry(&mut self) -> Option<TableEntry>;
     fn set_entry(&mut self, entry: TableEntry, index: usize) -> Result<(), Box<dyn Error>>;
     fn get_entry(&self, index: usize) -> Option<TableEntry>;
     fn remove_entry(&mut self, index: usize) -> Option<TableEntry>;
+
+    //Funcs for properly encoding/decoding
+    fn to_ascii_vec(self) -> Vec<String>;
 
     //Other funcs
     fn len(&self) -> usize;
@@ -45,7 +48,7 @@ pub trait Col: Debug + DynClone {
 }
 
 //This macro makes Col a clonable trait object
-clone_trait_object!(Col);
+clone_trait_object!(AsciiCol);
 
 #[derive(Debug, Clone)]
 pub(crate) struct Column<T> {
@@ -67,7 +70,7 @@ impl<T> Column<T> {
     }
 }
 
-impl Col for Column<String> {
+impl AsciiCol for Column<String> {
 
     fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError> {
         match entry {
@@ -119,6 +122,12 @@ impl Col for Column<String> {
 
     fn len(&self) -> usize {self.container.len()}
 
+    fn to_ascii_vec(self) -> Vec<String> {
+        self.container.into_iter()
+            .map(|primitive| primitive.to_string())
+            .collect()
+    }
+
     fn get_col_label(&self) -> Option<&str> {
         match &self.label {
             Some(label) => Some(label.as_str()),
@@ -135,7 +144,7 @@ impl Col for Column<String> {
 
 }
 
-impl Col for Column<i64> {
+impl AsciiCol for Column<i64> {
 
     fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError> {
         match entry {
@@ -187,6 +196,12 @@ impl Col for Column<i64> {
 
     fn len(&self) -> usize {self.container.len()}
 
+    fn to_ascii_vec(self) -> Vec<String> {
+        self.container.into_iter()
+            .map(|primitive| primitive.to_string())
+            .collect()
+    }
+
     fn get_col_label(&self) -> Option<&str> {
         match &self.label {
             Some(label) => Some(label.as_str()),
@@ -203,7 +218,7 @@ impl Col for Column<i64> {
     
 }
 
-impl Col for Column<f64> {
+impl AsciiCol for Column<f64> {
 
     fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError> {
         match entry {
@@ -254,6 +269,12 @@ impl Col for Column<f64> {
     }
 
     fn len(&self) -> usize {self.container.len()}
+
+    fn to_ascii_vec(self) -> Vec<String> {
+        self.container.into_iter()
+            .map(|primitive| primitive.to_string())
+            .collect()
+    }
 
     fn get_col_label(&self) -> Option<&str> {
         match &self.label {

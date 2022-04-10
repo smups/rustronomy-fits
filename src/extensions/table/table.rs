@@ -26,14 +26,14 @@ use simple_error::SimpleError;
 
 use crate::{raw::BlockSized, extensions::ExtensionPrint};
 
-use super::{column::Col, TableEntry};
+use super::{column::AsciiCol, TableEntry};
 
 /*  Description:
     This is the abstracted user-facing api for tables. The 
 */
 #[derive(Debug, Clone)]
 pub struct Table{
-    cols: Vec<Box<dyn Col>>,
+    cols: Vec<Box<dyn AsciiCol>>,
     block_size: Option<usize>
 }
 
@@ -100,7 +100,7 @@ impl Table {
         }
     }
 
-    pub fn get_column(&self, index: usize) -> Option<&dyn Col> {
+    pub fn get_column(&self, index: usize) -> Option<&dyn AsciiCol> {
         match self.cols.get(index) {
             Some(boxed) => Some(boxed.as_ref()),
             None => None
@@ -110,7 +110,7 @@ impl Table {
     /*
         INTERNAL FUNCS
     */
-    pub(crate) fn new_sized(cols: Vec<Box<dyn Col>>, size: usize) -> Self {
+    pub(crate) fn new_sized(cols: Vec<Box<dyn AsciiCol>>, size: usize) -> Self {
         Table { cols: cols, block_size: Some(size) }
     }
 
