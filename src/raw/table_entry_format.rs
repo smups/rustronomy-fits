@@ -23,7 +23,7 @@
     contains the machinery to convert these codes to enum variants.
 */
 
-use std::{error::Error, fmt::Display, num::ParseIntError};
+use std::{fmt::Display, num::ParseIntError};
 
 use crate::tbl_fmt_err::{
     InvalidFFCode as IFFCErr
