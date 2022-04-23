@@ -19,7 +19,7 @@
 
 use std::{
     error::Error,
-    fmt::{Display, Formatter, self}
+    fmt::{Display, Formatter, self}, ops::Not
 };
 
 #[derive(Debug)]
@@ -83,5 +83,28 @@ impl InvalidRecordValueError {
             invalid_value: String::from(invalid_value),
             allowed_values: allowed_values
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct NotImplementedErr {
+    //thrown when accessing extension that was not implemented
+    xtnsion: String
+}
+
+impl Error for NotImplementedErr {}
+impl Display for NotImplementedErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Error while constructing HDU: extension {} not yet implemented",
+            self.xtnsion
+        )
+    }
+}
+
+impl NotImplementedErr {
+    pub fn new(xtnsion: String) -> Self {
+        NotImplementedErr { xtnsion: xtnsion }
     }
 }

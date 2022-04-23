@@ -36,6 +36,7 @@ pub struct InvalidFitsFileErr {
 pub(crate) const FILE_BLOCK_DIV: &'static str = "tried to open file with a length not equal to an integer multiple of FITS blocks";
 pub(crate) const BUF_BLOCK_DIV: &'static str = "supplied buffer not an integer multiple of FITS blocks";
 pub(crate) const FILE_END: &'static str = "tried to read more FITS blocks than the file contains";
+pub(crate) const CORRUPTED: &'static str = "tried to access corrupted data";
 
 impl Error for InvalidFitsFileErr {}
 impl Display for InvalidFitsFileErr {

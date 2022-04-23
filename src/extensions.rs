@@ -19,9 +19,10 @@
 
 use std::{fmt::Display, error::Error};
 
-use simple_error::SimpleError;
-
-use crate::raw::{BlockSized, raw_io::RawFitsWriter};
+use crate::{
+    raw::{BlockSized, raw_io::RawFitsWriter},
+    io_err::{self, InvalidFitsFileErr as IFFErr}
+};
 
 use self::{
     image::{TypedImage, ImgParser},
@@ -70,9 +71,7 @@ impl Extension {
         -> Result<(), Box<dyn Error>>
     {
         match self {
-            Self::Corrupted => { return Err(Box::new(SimpleError::new(
-                "Error while writing FITS file: tried to write corrupted data!"
-            )));},
+            Self::Corrupted => return Err(Box::new(IFFErr::new(io_err::CORRUPTED))),
             Self::Image(img) => {
                 ImgParser::encode_img(img, writer)
             },

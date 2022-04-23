@@ -20,14 +20,12 @@
 use core::fmt;
 use std::{error::Error, fmt::Display, borrow::Cow};
 
-use simple_error::SimpleError;
-
 use crate::{
     header::Header,
     extensions::{Extension, image::ImgParser, table::AsciiTblParser},
     raw::{raw_io::{RawFitsReader, RawFitsWriter}, BlockSized},
     bitpix::Bitpix,
-    hdu_err::InvalidRecordValueError
+    hdu_err::*
 };
 
 const VALID_EXTENSION_NAMES: [&'static str; 3] = [
@@ -219,10 +217,8 @@ impl HeaderDataUnit{
         Ok(())
     }
 
-    fn not_impl(keyword: &str) -> Box<SimpleError> {
-        Box::new(SimpleError::new(
-            format!("Error while constructing HDU: extension {keyword} not implemented yet!")
-        ))
+    fn not_impl(keyword: &str) -> Box<NotImplementedErr> {
+        Box::new(NotImplementedErr::new(keyword.to_string()))
     }
 
     /*

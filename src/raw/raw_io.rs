@@ -29,8 +29,6 @@ use crate::io_err::{
     InvalidFitsFileErr as IFFErr
 };
 
-use simple_error::SimpleError;
-
 //Get block size from root
 const BLOCK_SIZE: usize = crate::BLOCK_SIZE;
 
