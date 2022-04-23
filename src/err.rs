@@ -26,3 +26,4 @@
 //Listing of the errors
 pub mod hdu_err;
 pub mod keyword_err;
+pub mod io_err;
