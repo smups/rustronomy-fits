@@ -16,13 +16,16 @@
     You should have received a copy of the GNU General Public License
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+use std::fmt::{self, Formatter, Display};
+
 use crate::hdu_err::InvalidRecordValueError;
 
 const VALID_BITPIX_VALUES: [&'static str; 6] = [
     "8", "16", "32", "64", "-32", "-64"
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Bitpix {
     Byte,
     Short,
@@ -57,6 +60,20 @@ impl Bitpix {
             &Self::Long => 64,
             &Self::Spf => -32,
             &Self::Dpf => -64
+        }
+    }
+}
+
+impl Display for Bitpix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use Bitpix::*;
+        match *self {
+            Byte => write!(f, "u8"),
+            Short => write!(f, "i16"),
+            Int => write!(f, "i32"),
+            Long => write!(f, "i62"),
+            Spf => write!(f, "f32"),
+            Dpf => write!(f, "f64")
         }
     }
 }
