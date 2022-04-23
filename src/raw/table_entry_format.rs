@@ -25,7 +25,9 @@
 
 use std::{error::Error, fmt::Display, num::ParseIntError};
 
-use simple_error::SimpleError;
+use crate::tbl_fmt_err::{
+    InvalidFFCode as IFFCErr
+};
 
 #[derive(Debug, Clone)]
 pub(crate) enum TableEntryFormat {
@@ -76,16 +78,12 @@ impl TableEntryFormat {
         }
     }
 
-    pub(crate) fn to_fortran_format_code(&self) -> Result<String, Box<dyn Error>> {
+    pub(crate) fn to_fortran_format_code(&self) -> Result<String, IFFCErr> {
         Ok(match &self {
             Self::Char(w) => format!("A{w}"),
             Self::Int(w) => format!("I{w}"),
             Self::Float((w, d)) => format!("E{w}.{d}"),
-            Self::Invalid(val) => {
-                return Err(Box::new(SimpleError::new(
-                    format!("Error while writing Table: '{val}' is not a valid Fortran Formatting Code")
-                )))
-            }
+            Self::Invalid(val) => return Err(IFFCErr::new(val.to_string()))
         })
     }
 
