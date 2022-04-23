@@ -53,3 +53,29 @@ impl KeywordRecordBufferErr {
         Self{ msg: msg }
     }
 }
+
+#[derive(Debug)]
+pub struct ProtectedKeywordErr {
+    /*
+        This error may be thrown when an instance tries to modify a protected
+        keyword. 
+    */
+    keyword: &'static str
+}
+
+impl Error for ProtectedKeywordErr {}
+impl Display for ProtectedKeywordErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f, 
+            "Cannot create a keyword record for ({}), since it is a protected keyword. See documentation for more info",
+            self.keyword
+        )
+    }
+}
+
+impl ProtectedKeywordErr {
+    pub fn new(kw: &str) -> Self {
+        ProtectedKeywordErr { keyword: kw }
+    }
+}
