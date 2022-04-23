@@ -62,6 +62,13 @@ impl Bitpix {
             &Self::Dpf => -64
         }
     }
+
+    pub(crate) fn byte() -> Self {Self::Byte}
+    pub(crate) fn short() -> Self {Self::Short}
+    pub(crate) fn int() -> Self {Self::Int}
+    pub(crate) fn long() -> Self {Self::Long}
+    pub(crate) fn spf() -> Self {Self::Spf}
+    pub(crate) fn dpf() -> Self {Self::Dpf}
 }
 
 impl Display for Bitpix {
