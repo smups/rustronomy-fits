@@ -71,7 +71,9 @@ impl KeywordRecord {
         THE FOLLOWING FUNCS ARE INTERNAL
     */
 
-    pub(crate) fn from_string(keyword: Rc<String>, value: String, comment: Option<String>) -> Self {
+    pub(crate) fn from_string(keyword: Rc<String>, value: String, comment: Option<String>)
+        -> Self
+    {
         KeywordRecord{
             keyword: keyword,
             value: Some(value),
@@ -88,7 +90,7 @@ impl KeywordRecord {
             ));
         }
 
-        //value and comment vlags
+        //value and comment flags
         let mut has_val: bool;
         let has_com: bool;
 

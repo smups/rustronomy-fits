@@ -50,7 +50,7 @@ impl Header {
 
     pub fn decode_header(raw: &mut RawFitsReader) -> Result<Self, Box<dyn Error>> {
         /*  Setup:
-            We'll keep reading headerblocks (= FITS blocks) untill we encounter
+            We'll keep reading headerblocks (= FITS blocks) until we encounter
             the END keyword. We'll also have to keep track of the block size of
             the entire header.   
         */
@@ -103,7 +103,7 @@ impl Header {
                         last_parsed.value.as_mut().unwrap()
                             .push_str(unparsed_record.value.unwrap().as_str());
 
-                        //(3) do not append keyword-record pair as seperate entry
+                        //(3) do not append keyword-record pair as separate entry
                         continue;
                     },
                     _ => {} //do nothing
@@ -112,7 +112,7 @@ impl Header {
                 //update last keyword
                 last_keyword = (*unparsed_record.keyword).clone();
 
-                //and add our beatiful string
+                //and add our beautiful string
                 parsed_map.insert(unparsed_record.keyword.clone(), unparsed_record);
             }
         }
@@ -131,7 +131,7 @@ impl Header {
             record.encode_fill_buff(&mut buf)?;
         }
 
-        //We musn´t forget to add an END keyword!
+        //We musn't forget to add an END keyword!
         KeywordRecord{
             keyword: Rc::new(String::from("END     ")),
             value: None,
