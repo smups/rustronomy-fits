@@ -75,7 +75,7 @@ impl Display for ProtectedKeywordErr {
 }
 
 impl ProtectedKeywordErr {
-    pub fn new(kw: &str) -> Self {
+    pub fn new(kw: &'static str) -> Self {
         ProtectedKeywordErr { keyword: kw }
     }
 }
