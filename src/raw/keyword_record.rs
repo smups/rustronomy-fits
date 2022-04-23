@@ -25,6 +25,7 @@ use std::{
 };
 
 use rustronomy_core::data_type_traits::io_utils::Encode;
+use crate::keyword_err::{KeywordRecordBufferErr as KRBufErr, self};
 use simple_error::SimpleError;
 
 #[derive(Debug, Clone)]
@@ -80,12 +81,10 @@ impl KeywordRecord {
     }
 
     //Helper function for decoding. Not part of API
-    pub(crate) fn decode_from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
+    pub(crate) fn decode_from_bytes(bytes: &[u8]) -> Result<Self, KRBufErr> {
         //Make sure that we got 80 bytes:
         if bytes.len() != 80 {
-            return Err(Box::new(
-                SimpleError::new("Keyword record buffer was not 80 bytes long.")
-            ));
+            return Err(KRBufErr::new(keyword_err::BUFFER_LEN));
         }
 
         //value and comment vlags
@@ -102,9 +101,7 @@ impl KeywordRecord {
 
         //Keyword and value should be valid ASCII
         if !keyword.is_ascii() || !record.is_ascii() {
-            return Err(Box::new(
-                SimpleError::new("Keyword-valule pair contains illegal characters")
-            ));
+            return Err(KRBufErr::new(keyword_err::ILLEGAL_CHAR))
         }
 
         //Split record into value and comment
