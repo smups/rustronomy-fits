@@ -57,7 +57,6 @@ where T: Debug + Num + Sized + Decode + Encode + Display + Clone
         todo!()
     }
 
-
     /*
         INTERNAL CODE
     */

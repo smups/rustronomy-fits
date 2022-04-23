@@ -29,3 +29,4 @@ pub mod keyword_err;
 pub mod io_err;
 pub mod tbl_fmt_err;
 pub mod header_err;
+pub mod img_err;

@@ -18,14 +18,17 @@
 */
 
 use std::{
-    fmt::{Display, Formatter, Write, self},
+    fmt::{Display, Write},
     error::Error
 };
 
 use ndarray::{Array, IxDyn};
-use simple_error::SimpleError;
 
-use crate::{raw::BlockSized, extensions::ExtensionPrint};
+use crate::{
+    raw::BlockSized,
+    extensions::ExtensionPrint,
+    img_err::WrongImgTypeErr as WITErr, bitpix::Bitpix
+};
 
 use super::generic_image::Image;
 
@@ -98,111 +101,101 @@ impl Display for TypedImage {
 
 impl TypedImage {
 
+    pub(crate) fn bpx(&self) -> Bitpix {
+        use Bitpix::*;
+        use TypedImage::*;
+
+        match self {
+            ByteImg(_) => Byte,
+            I16Img(_) => Short,
+            I32Img(_) => Int,
+            I64Img(_) => Long,
+            SpfImg(_) => Spf,
+            DpfImg(_) => Dpf
+        }
+    }
+
     pub fn as_u8_array(&self) -> Result<&Array<u8, IxDyn>, Box<dyn Error>> {
         match &self {
             Self::ByteImg(img) => Ok(img.get_data()),
-            &var => Err(Box::new(SimpleError::new(
-                format!("Tried to borrow {:?} as u8 array", var)
-            )))
+            &var => Err(Box::new(WITErr::new(var, Bitpix::byte())))
         }
     }
 
     pub fn as_i16_array(&self) -> Result<&Array<i16, IxDyn>, Box<dyn Error>> {
         match &self {
             Self::I16Img(img) => Ok(img.get_data()),
-            &var => Err(Box::new(SimpleError::new(
-                format!("Tried to borrow {:?} as i16 array", var)
-            )))
+            &var => Err(Box::new(WITErr::new(var, Bitpix::short())))
         }
     }
 
     pub fn as_i32_array(&self) -> Result<&Array<i32, IxDyn>, Box<dyn Error>> {
         match &self {
             Self::I32Img(img) => Ok(img.get_data()),
-            &var => Err(Box::new(SimpleError::new(
-                format!("Tried to borrow {:?} as i32 array", var)
-            )))
+            &var => Err(Box::new(WITErr::new(var, Bitpix::int())))
         }
     }
 
     pub fn as_i64_array(&self) -> Result<&Array<i64, IxDyn>, Box<dyn Error>> {
         match &self {
             Self::I64Img(img) => Ok(img.get_data()),
-            &var => Err(Box::new(SimpleError::new(
-                format!("Tried to borrow {:?} as i64 array", var)
-            )))
+            &var => Err(Box::new(WITErr::new(var, Bitpix::long())))
         }
     }
 
     pub fn as_f32_array(&self) -> Result<&Array<f32, IxDyn>, Box<dyn Error>> {
         match &self {
             Self::SpfImg(img) => Ok(img.get_data()),
-            &var => Err(Box::new(SimpleError::new(
-                format!("Tried to borrow {:?} as f32 array", var)
-            )))
+            &var => Err(Box::new(WITErr::new(var, Bitpix::spf())))
         }
     }
 
     pub fn as_f64_array(&self) -> Result<&Array<f64, IxDyn>, Box<dyn Error>> {
         match &self {
             Self::DpfImg(img) => Ok(img.get_data()),
-            &var => Err(Box::new(SimpleError::new(
-                format!("Tried to borrow {:?} as f64 array", var)
-            )))
+            &var => Err(Box::new(WITErr::new(var, Bitpix::dpf())))
         }
     }
 
     pub fn as_owned_u8_array(self) -> Result<Array<u8, IxDyn>, Box<dyn Error>> {
         match self {
             Self::ByteImg(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(SimpleError::new(
-                format!("Tried to convert {:?} to an u8 array", var)
-            )))
+            var => Err(Box::new(WITErr::new(&var, Bitpix::byte())))
         }
     }
 
     pub fn as_owned_i16_array(self) -> Result<Array<i16, IxDyn>, Box<dyn Error>> {
         match self {
             Self::I16Img(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(SimpleError::new(
-                format!("Tried to convert {:?} to an i16 array", var)
-            )))
+            var => Err(Box::new(WITErr::new(&var, Bitpix::short())))
         }
     }
 
     pub fn as_owned_i32_array(self) -> Result<Array<i32, IxDyn>, Box<dyn Error>> {
         match self {
             Self::I32Img(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(SimpleError::new(
-                format!("Tried to convert {:?} to an i32 array", var)
-            )))
+            var => Err(Box::new(WITErr::new(&var, Bitpix::int())))
         }
     }
 
     pub fn as_owned_i64_array(self) -> Result<Array<i64, IxDyn>, Box<dyn Error>> {
         match self {
             Self::I64Img(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(SimpleError::new(
-                format!("Tried to convert {:?} to an i64 array", var)
-            )))
+            var => Err(Box::new(WITErr::new(&var, Bitpix::long())))
         }
     }
 
     pub fn as_owned_f32_array(self) -> Result<Array<f32, IxDyn>, Box<dyn Error>> {
         match self {
             Self::SpfImg(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(SimpleError::new(
-                format!("Tried to convert {:?} to an f32 array", var)
-            )))
+            var => Err(Box::new(WITErr::new(&var, Bitpix::spf())))
         }
     }
 
     pub fn as_owned_f64_array(self) -> Result<Array<f64, IxDyn>, Box<dyn Error>> {
         match self {
             Self::DpfImg(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(SimpleError::new(
-                format!("Tried to convert {:?} to an f64 array", var)
-            )))
+            var => Err(Box::new(WITErr::new(&var, Bitpix::dpf())))
         }
     }
 

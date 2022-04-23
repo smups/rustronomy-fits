@@ -36,13 +36,13 @@ use rustronomy_core::data_type_traits::io_utils::{Decode, Encode};
 //External Imports
 use ndarray::{Array, ShapeBuilder};
 use num_traits::Num;
-use simple_error::SimpleError;
 use rayon::prelude::*;
 
 use crate::{
     raw::raw_io::{RawFitsReader, RawFitsWriter},
     Extension,
-    bitpix::Bitpix
+    bitpix::Bitpix,
+    img_err::InvalidMemLayout as IMLErr
 };
 
 use super::{
@@ -204,9 +204,7 @@ impl ImgParser{
                 match img.get_data().as_slice_memory_order() {
                     None => {
                         //Data is NOT continuous, return error!
-                        return Err(Box::new(SimpleError::new(
-                            "Error while encoding Image: underlying ndarray used to create image used an unsupported discontinuous memory layout!"
-                        )));
+                        return Err(Box::new(IMLErr::new()));
                     } _ => {} //Data IS continuous, continue!
                 }
 
