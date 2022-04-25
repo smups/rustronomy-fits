@@ -17,11 +17,12 @@
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-use std::fmt::{Display, Formatter, self};
+use std::{fmt::{Display, Formatter, self}, error::Error};
 
-use simple_error::{SimpleError, try_with};
-
-use crate::raw::table_entry_format::TableEntryFormat;
+use crate::{
+    tbl_fmt_err::{InvalidFFCode, FieldSizeMisMatch, ParseError},
+    raw::table_entry_format::TableEntryFormat
+};
 
 #[derive(Debug, Clone)]
 pub enum TableEntry {
@@ -32,37 +33,51 @@ pub enum TableEntry {
 
 impl Display for TableEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use TableEntry::*;
         write!(f, "{}", match self {
-            Self::Text(txt) => format!("{txt} (string)"),
-            Self::Int(num) => format!("{num} (int)"),
-            Self::Float(num) => format!("{num} (float)")
+            Text(txt) => format!("{txt} (string)"),
+            Int(num) => format!("{num} (int)"),
+            Float(num) => format!("{num} (float)")
         })
     }
 }
 
 impl TableEntry {
     pub(crate) fn from_parts(raw_field: &str, format: &TableEntryFormat)
-        -> Result<Self, SimpleError>
+        -> Result<Self, ParseError>
     {
         //(1) Check if the field is as long as was specified in the format
-        if format.get_field_width() != raw_field.len() {return Err(SimpleError::new(
-            "Error while decoding table: field size did not match format size"
-        ));}
+        if format.get_field_width() != raw_field.len() {
+            return Err(FieldSizeMisMatch::new(format, raw_field).into());
+        }
 
         //(2) Match the format (and don't forget to strip spaces of the numeric
         //    variants before parsing them!)
+        use TableEntryFormat::*;
+        
         Ok(match format {
-            TableEntryFormat::Char(_) => {
+            Char(_) => {
                 Self::Text(String::from(raw_field))
-            } TableEntryFormat::Int(_) => {
-                Self::Int(try_with!(str::parse(raw_field.trim()), ""))
-            } TableEntryFormat::Float(_) => {
-                Self::Float(try_with!(str::parse(raw_field.trim()), ""))
-            } TableEntryFormat::Invalid(invalid_format) => { return Err(
-                SimpleError::new(format!(
-                    "Error while decoding table: '{invalid_format}' is not a valid Fortran formatting code"
-                ))
-            );}
+            } Int(_) => {
+                Self::Int(str::parse(raw_field.trim())?)
+            } Float(_) => {
+                Self::Float(str::parse(raw_field.trim())?)
+            } Invalid(invalid_format) => {
+                return Err(InvalidFFCode::new(format.to_string()).into());
+            }
         })
     }
+
+    pub(crate) fn type_print(&self) -> String {
+        use TableEntry::*;
+        match &self {
+            Text(_) => String::from("(string)"),
+            Int(_) => String::from("(int)"),
+            Float(_) => String::from("(float)")
+        }
+    }
+
+    pub(crate) fn txt() -> Self {Self::Text(String::from(""))}
+    pub(crate) fn int() -> Self {Self::Int(0)}
+    pub(crate) fn float() -> Self {Self::Float(0.0)}
 }

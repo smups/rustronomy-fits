@@ -31,7 +31,8 @@ use crate::{
         table_entry_format::TableEntryFormat,
         raw_io::{RawFitsReader, RawFitsWriter}
     },
-    extensions::{Extension, table::column::AsciiCol}
+    extensions::{Extension, table::column::AsciiCol},
+    tbl_fmt_err::ParseError
 };
 
 use super::{AsciiTable, TableEntry, column::Column};
@@ -118,11 +119,11 @@ impl AsciiTblParser{
                 field_vec.into_iter()
                 .enumerate()
                 .map(|(i, st)| TableEntry::from_parts(st, &fmts[i]))
-                .collect::<Result<Vec<TableEntry>, SimpleError>>()
+                .collect::<Result<Vec<TableEntry>, ParseError>>()
             })
-            .collect::<Vec<Result<Vec<TableEntry>, SimpleError>>>();
+            .collect::<Vec<Result<Vec<TableEntry>, ParseError>>>();
         let fmtd_rows = fmtd_rows_err.into_iter()
-            .collect::<Result<Vec<Vec<TableEntry>>, SimpleError>>()?;
+            .collect::<Result<Vec<Vec<TableEntry>>, ParseError>>()?;
 
         //(3c) fill the table with the formatted rows (step 4)
         for row in fmtd_rows {tbl.add_row(row)?;}
@@ -196,7 +197,6 @@ impl AsciiTblParser{
         string_cols.iter_mut()
             .for_each(|col| col.resize_with(col_len, || String::from(" ")));
 
-        
         todo!()
     }
 }

@@ -17,14 +17,14 @@
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-use std::{
-    fmt::{Display, Formatter, self},
-    error::Error
+use std::{fmt::{Display, Formatter, self}, error::Error};
+
+use crate::{
+    raw::BlockSized,
+    extensions::ExtensionPrint,
+    tbl_err::IndexOutOfRangeErr,
+    tbl_err::ShapeMisMatchErr
 };
-
-use simple_error::SimpleError;
-
-use crate::{raw::BlockSized, extensions::ExtensionPrint};
 
 use super::{column::AsciiCol, TableEntry};
 
@@ -82,24 +82,18 @@ impl AsciiTable {
     */
 
     pub fn get_entry(&self, col: usize, row: usize)
-        -> Result<TableEntry, Box<dyn Error>>
+        -> Result<TableEntry, IndexOutOfRangeErr>
     {
         //returns a reference to an entry in the table, if it exists
         
         //(1) Check if the column index is valid -> if yes, get the column
-        if col >= self.cols.len() {return Err(Box::new(SimpleError::new(format!(
-            "Column index {col} is out of range for a table with {} columns!",
-            self.cols.len()
-        ))));}
+        if col >= self.cols.len() {return Err(IndexOutOfRangeErr::new((col, row), self));}
         let column = self.cols.get(col).unwrap().as_ref();
 
         //(2) get the entry from the column
         match column.get_entry(row) {
             Some(entry) => Ok(entry),
-            None => Err(Box::new(SimpleError::new(format!(
-                "Row index {row} is out of range for column #{col} with length {}",
-                column.len()
-            ))))
+            None => Err(IndexOutOfRangeErr::new((col, row), self))
         }
     }
 
@@ -111,6 +105,11 @@ impl AsciiTable {
         }
     }
 
+    pub fn get_shape(&self) -> (usize, usize) {
+        //returns shape (columns, rows) of table
+        (self.cols.len(), self.max_col_len())
+    }
+
     /*
         INTERNAL FUNCS
     */
@@ -120,12 +119,11 @@ impl AsciiTable {
     }
 
     pub(crate) fn add_row(&mut self, row: Vec<TableEntry>)
-        -> Result<(), SimpleError>
+        -> Result<(), Box<dyn Error>>
     {
         //Adds row to table
-        if row.len() != self.cols.len() { return Err(SimpleError::new(
-            "Error when adding row to table: number of columns in table and the number of fields in row don't match!"
-        ));
+        if row.len() != self.cols.len() {
+            return Err(Box::new(ShapeMisMatchErr::new(&row, &self)));
         }
 
         //Add row to the table

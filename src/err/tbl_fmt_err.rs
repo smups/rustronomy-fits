@@ -19,8 +19,11 @@
 
 use std::{
     error::Error,
-    fmt::{self, Display, Formatter}
+    fmt::{self, Display, Formatter},
+    num::{ParseIntError, ParseFloatError}
 };
+
+use crate::raw::table_entry_format::TableEntryFormat;
 
 #[derive(Debug)]
 pub struct InvalidFFCode {
@@ -45,5 +48,69 @@ impl Display for InvalidFFCode {
 impl InvalidFFCode {
     pub(crate) fn new(invalid_code: String) -> Self {
         InvalidFFCode { invld_code: invalid_code }
+    }
+}
+
+#[derive(Debug)]
+pub struct FieldSizeMisMatch {
+    buf_size: usize,
+    fmt_field_size: usize
+}
+
+impl Error for FieldSizeMisMatch {}
+impl Display for FieldSizeMisMatch {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f,
+            "Error while decoding table entry: format specifies field size {}, but received buffer with size {}",
+            self.fmt_field_size, self.buf_size
+        )
+    }
+}
+
+impl FieldSizeMisMatch {
+    pub(crate) fn new(fmt: &TableEntryFormat, field: &str) -> Self {
+        FieldSizeMisMatch{
+            buf_size: field.len(),
+            fmt_field_size: fmt.get_field_width()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ParseError {
+    FieldSizeMisMatch(FieldSizeMisMatch),
+    ParseIntError(ParseIntError),
+    ParseFloatError(ParseFloatError),
+    InvalidFFCode(InvalidFFCode)
+}
+
+impl Error for ParseError {}
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "Error while parsing table entry: '{}'", self)
+    }
+}
+
+impl From<FieldSizeMisMatch> for ParseError {
+    fn from(err: FieldSizeMisMatch) -> Self {
+        ParseError::FieldSizeMisMatch(err)
+    }
+}
+
+impl From<ParseIntError> for ParseError {
+    fn from(err: ParseIntError) -> Self {
+        ParseError::ParseIntError(err)
+    }
+}
+
+impl From<ParseFloatError> for ParseError {
+    fn from(err: ParseFloatError) -> Self {
+        ParseError::ParseFloatError(err)
+    }
+}
+
+impl From<InvalidFFCode> for ParseError {
+    fn from(err: InvalidFFCode) -> Self {
+        ParseError::InvalidFFCode(err)
     }
 }

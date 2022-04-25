@@ -20,8 +20,13 @@
 use std::{error::Error, fmt::Debug};
 
 use dyn_clone::{DynClone, clone_trait_object};
-use simple_error::SimpleError;
 use rayon::prelude::*;
+
+use crate::tbl_err::{
+    IndexOutOfRangeErr,
+    TypeMisMatchErr,
+    TblDecodeErr
+};
 
 use super::TableEntry;
 
@@ -33,9 +38,9 @@ pub trait AsciiCol: Debug + DynClone {
     */
 
     //Funcs for modifying/adding/removing entries in the column
-    fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError>;
+    fn push_entry(&mut self, entry: TableEntry) -> Result<(), TypeMisMatchErr>;
     fn pop_entry(&mut self) -> Option<TableEntry>;
-    fn set_entry(&mut self, entry: TableEntry, index: usize) -> Result<(), Box<dyn Error>>;
+    fn set_entry(&mut self, entry: TableEntry, index: usize) -> Result<(), TblDecodeErr>;
     fn get_entry(&self, index: usize) -> Option<TableEntry>;
     fn remove_entry(&mut self, index: usize) -> Option<TableEntry>;
 
@@ -73,12 +78,10 @@ impl<T> Column<T> {
 
 impl AsciiCol for Column<String> {
 
-    fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError> {
+    fn push_entry(&mut self, entry: TableEntry) -> Result<(), TypeMisMatchErr> {
         match entry {
             TableEntry::Text(txt) => Ok(self.container.push(txt)),
-            other => Err(SimpleError::new(format!(
-                "Cannot add '{other}' to a column containing strings!"
-            )))
+            other => Err(TypeMisMatchErr::new(TableEntry::txt(), &entry))
         }
     }
 
@@ -90,22 +93,21 @@ impl AsciiCol for Column<String> {
     }
 
     fn set_entry(&mut self, entry: TableEntry, index: usize)
-        -> Result<(), Box<dyn Error>>
+        -> Result<(), TblDecodeErr>
     {
         match entry {
             TableEntry::Text(txt) => {
                 if self.container.len() >= index {
-                    Err(Box::new(SimpleError::new(format!(
-                        "Index {index} is out of range for column with length {}",
-                        self.container.len() 
-                    ))))
+                    Err(
+                        IndexOutOfRangeErr::from_idx(
+                            (None, index), (None, self.container.len())
+                        ).into()
+                    )
                 } else {
                     self.container[index] = txt;
                     Ok(())
                 }
-            } other => return Err(Box::new(SimpleError::new(format!(
-                "Cannot change entry in a column containing strings to '{other}'"
-            ))))
+            } other => Err(TypeMisMatchErr::new(TableEntry::txt(), &entry).into())
         }
     }
 
@@ -147,12 +149,10 @@ impl AsciiCol for Column<String> {
 
 impl AsciiCol for Column<i64> {
 
-    fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError> {
+    fn push_entry(&mut self, entry: TableEntry) -> Result<(),  TypeMisMatchErr> {
         match entry {
             TableEntry::Int(num) => Ok(self.container.push(num)),
-            other => Err(SimpleError::new(format!(
-                "Cannot add '{other}' to a column containing integers!"
-            )))
+            other => Err(TypeMisMatchErr::new(TableEntry::int(), &entry))
         }
     }
 
@@ -164,22 +164,21 @@ impl AsciiCol for Column<i64> {
     }
 
     fn set_entry(&mut self, entry: TableEntry, index: usize)
-        -> Result<(), Box<dyn Error>>
+        -> Result<(), TblDecodeErr>
     {
         match entry {
             TableEntry::Int(num) => {
                 if self.container.len() >= index {
-                    Err(Box::new(SimpleError::new(format!(
-                        "Index {index} is out of range for column with length {}",
-                        self.container.len() 
-                    ))))
+                    Err(
+                        IndexOutOfRangeErr::from_idx(
+                            (None, index), (None, self.container.len())
+                        ).into()
+                    )
                 } else {
                     self.container[index] = num;
                     Ok(())
                 }
-            } other => return Err(Box::new(SimpleError::new(format!(
-                "Cannot change entry in a column containing integers to '{other}'"
-            ))))
+            } other => return Err(TypeMisMatchErr::new(TableEntry::int(), &entry).into())
         }
     }
 
@@ -221,12 +220,10 @@ impl AsciiCol for Column<i64> {
 
 impl AsciiCol for Column<f64> {
 
-    fn push_entry(&mut self, entry: TableEntry) -> Result<(), SimpleError> {
+    fn push_entry(&mut self, entry: TableEntry) -> Result<(), TypeMisMatchErr> {
         match entry {
             TableEntry::Float(num) => Ok(self.container.push(num)),
-            other => Err(SimpleError::new(format!(
-                "Cannot add '{other}' to a column containing floats!"
-            )))
+            other => Err(TypeMisMatchErr::new(TableEntry::float(), &entry))
         }
     }
 
@@ -238,22 +235,21 @@ impl AsciiCol for Column<f64> {
     }
 
     fn set_entry(&mut self, entry: TableEntry, index: usize)
-        -> Result<(), Box<dyn Error>>
+        -> Result<(), TblDecodeErr>
     {
         match entry {
             TableEntry::Float(num) => {
                 if self.container.len() >= index {
-                    Err(Box::new(SimpleError::new(format!(
-                        "Index {index} is out of range for column with length {}",
-                        self.container.len() 
-                    ))))
+                    Err(
+                        IndexOutOfRangeErr::from_idx(
+                            (None, index), (None, self.container.len())
+                        ).into()
+                    )
                 } else {
                     self.container[index] = num;
                     Ok(())
                 }
-            } other => return Err(Box::new(SimpleError::new(format!(
-                "Cannot change entry in a column containing floats to '{other}'"
-            ))))
+            } other => return Err(TypeMisMatchErr::new(TableEntry::float(), &entry).into())
         }
     }
 
