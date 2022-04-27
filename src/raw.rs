@@ -18,29 +18,12 @@
 */
 
 //Module structure
-mod header;
-mod bitpix;
-mod fits;
-mod extensions;
-mod raw;
-mod header_data_unit;
-mod err;
+pub(crate) mod raw_io;
+pub(crate) mod keyword_record;
+pub(crate) mod header_block;
+pub(crate) mod table_entry_format;
 
-//Constants defined by the FITS standard
-pub(crate) const BLOCK_SIZE: usize = 2880;
-
-//Public api re-exports
-pub use fits::Fits as Fits;
-pub use header::Header as Header;
-pub use header_data_unit::HeaderDataUnit as HeaderDataUnit;
-pub use extensions::Extension as Extension;
-pub use err::*;
-
-//prelude (kinda pointless rn but whatev)
-pub mod prelude {
-    pub use crate::err::*;
-    pub use crate::fits::Fits as Fits;
-    pub use crate::header::Header as Header;
-    pub use crate::header_data_unit::HeaderDataUnit as HeaderDataUnit;
-    pub use crate::extensions::Extension as Extension;
+pub(crate) trait BlockSized {
+    //Internal crate used for writing FITS files, not part of API
+    fn get_block_len(&self) -> usize;
 }

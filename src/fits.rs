@@ -32,14 +32,12 @@ use crate::{
     header_data_unit::HeaderDataUnit
 };
 
-#[derive(Debug)]
-pub struct Fits {
-    hdus: Vec<HeaderDataUnit>,
-    reader: Option<RawFitsReader>,
-    writer: Option<RawFitsWriter>
+#[derive(Debug, Clone)]
+pub struct Fits{
+    hdus: Vec<HeaderDataUnit>
 }
 
-impl Fits {
+impl Fits{
 
     pub fn open(path: &Path) -> Result<Self, Box<dyn Error>> {
         //(1) Construct a RawFitsReader
@@ -53,7 +51,7 @@ impl Fits {
 
         //File is empty, we don't need the reader anymore!
         // (3) return the completed file
-        Ok(Fits {hdus: hdus, reader: None, writer: None})
+        Ok(Fits {hdus: hdus})
     }
 
     pub fn write(self, path: &Path) -> Result<(), Box<dyn Error>> {
@@ -101,11 +99,5 @@ impl Display for Fits {
         }
         writeln!(f,">===============================================================================\n")?;
         Ok(())
-    }
-}
-
-impl Clone for Fits {
-    fn clone(&self) -> Self {
-        Self{ hdus: self.hdus.clone(), reader: None, writer: None }
     }
 }

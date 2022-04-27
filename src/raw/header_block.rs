@@ -19,7 +19,10 @@
 
 use std::error::Error;
 
-use simple_error::SimpleError;
+use crate::header_err::{
+    self,
+    HeaderBlockBufferErr as HBBErr
+};
 
 use super::keyword_record::KeywordRecord;
 
@@ -34,7 +37,7 @@ pub(crate) struct HeaderBlock{
 
 impl HeaderBlock {
 
-    pub(crate) fn decode_from_bytes(bytes: &[u8]) -> Result<(Self, bool), Box<dyn Error>> {
+    pub(crate) fn decode_from_bytes(bytes: &[u8]) -> Result<(Self, bool), HBBErr> {
 
         /*  If we're in the last headerblock of the header (denoted by the END
             keyword, then we have to set the return value of is_final to true
@@ -44,9 +47,7 @@ impl HeaderBlock {
 
         //First, require that the Header block is 2880 blocks long
         if bytes.len() != 2880 {
-            return Err(Box::new(
-                SimpleError::new("Header block buffer was not 2880 bytes long.")
-            ));
+            return Err(HBBErr::new(header_err::BUFFER_LEN));
         }
 
         //Create vector of keywordrecords and return it
@@ -87,9 +88,7 @@ impl HeaderBlock {
             buf.append(&mut vec![0u8; 2880 - buf.len()]);
             return Ok(buf);
         } else if buf.len() > 2880 {
-            return Err(Box::new(SimpleError::new(
-                "Error while encoding HeaderBlock: Header block contained more than 2880 bytes of data!"
-            )));
+            return Err(Box::new(HBBErr::new(header_err::BUFFER_LEN)));
         } else {
             return Ok(buf);
         }

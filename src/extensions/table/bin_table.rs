@@ -16,31 +16,3 @@
     You should have received a copy of the GNU General Public License
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-//Module structure
-mod header;
-mod bitpix;
-mod fits;
-mod extensions;
-mod raw;
-mod header_data_unit;
-mod err;
-
-//Constants defined by the FITS standard
-pub(crate) const BLOCK_SIZE: usize = 2880;
-
-//Public api re-exports
-pub use fits::Fits as Fits;
-pub use header::Header as Header;
-pub use header_data_unit::HeaderDataUnit as HeaderDataUnit;
-pub use extensions::Extension as Extension;
-pub use err::*;
-
-//prelude (kinda pointless rn but whatev)
-pub mod prelude {
-    pub use crate::err::*;
-    pub use crate::fits::Fits as Fits;
-    pub use crate::header::Header as Header;
-    pub use crate::header_data_unit::HeaderDataUnit as HeaderDataUnit;
-    pub use crate::extensions::Extension as Extension;
-}

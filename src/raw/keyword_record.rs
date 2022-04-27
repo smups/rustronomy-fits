@@ -25,7 +25,11 @@ use std::{
 };
 
 use rustronomy_core::data_type_traits::io_utils::Encode;
-use simple_error::SimpleError;
+use crate::keyword_err::{
+    KeywordRecordBufferErr as KRBufErr,
+    ProtectedKeywordErr as PKWErr,
+    self
+};
 
 #[derive(Debug, Clone)]
 pub struct KeywordRecord {
@@ -35,9 +39,9 @@ pub struct KeywordRecord {
         contained in the data section of the HDU. Those restricted keywords
         should always be updated in unison with the data they describe.
     */
-    pub keyword: Rc<String>,
-    pub value: Option<String>,
-    pub comment: Option<String>,
+    pub(crate) keyword: Rc<String>,
+    pub(crate) value: Option<String>,
+    pub(crate) comment: Option<String>,
 }
 
 impl KeywordRecord {
@@ -67,6 +71,23 @@ impl KeywordRecord {
         }
     }
 
+    pub fn new(keyword: &str, value: Option<String>, comment: Option<String>)
+        -> Result<Self, PKWErr>
+    {
+        // (1) Check if the keyword is protected
+        for kw in Self::RESTRICTED_KEYWORDS {
+            if kw == keyword {
+                return Err(PKWErr::new(kw))
+            }
+        }
+
+        Ok(KeywordRecord{
+            keyword: Rc::new(keyword.to_string()),
+            value: value,
+            comment: comment
+        })
+    }
+
     /*
         THE FOLLOWING FUNCS ARE INTERNAL
     */
@@ -82,12 +103,10 @@ impl KeywordRecord {
     }
 
     //Helper function for decoding. Not part of API
-    pub(crate) fn decode_from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn Error>> {
+    pub(crate) fn decode_from_bytes(bytes: &[u8]) -> Result<Self, KRBufErr> {
         //Make sure that we got 80 bytes:
         if bytes.len() != 80 {
-            return Err(Box::new(
-                SimpleError::new("Keyword record buffer was not 80 bytes long.")
-            ));
+            return Err(KRBufErr::new(keyword_err::BUFFER_LEN));
         }
 
         //value and comment flags
@@ -104,9 +123,7 @@ impl KeywordRecord {
 
         //Keyword and value should be valid ASCII
         if !keyword.is_ascii() || !record.is_ascii() {
-            return Err(Box::new(
-                SimpleError::new("Keyword-valule pair contains illegal characters")
-            ));
+            return Err(KRBufErr::new(keyword_err::ILLEGAL_CHAR))
         }
 
         //Split record into value and comment

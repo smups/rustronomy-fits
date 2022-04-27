@@ -16,31 +16,26 @@
     You should have received a copy of the GNU General Public License
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
+use std::path::PathBuf;
 
-//Module structure
-mod header;
-mod bitpix;
-mod fits;
-mod extensions;
-mod raw;
-mod header_data_unit;
-mod err;
+use rustronomy_fits as rsf;
 
-//Constants defined by the FITS standard
-pub(crate) const BLOCK_SIZE: usize = 2880;
+static TABLE_FILE: &str = "resources/Hubble_HRS.fits";
 
-//Public api re-exports
-pub use fits::Fits as Fits;
-pub use header::Header as Header;
-pub use header_data_unit::HeaderDataUnit as HeaderDataUnit;
-pub use extensions::Extension as Extension;
-pub use err::*;
+#[test]
+fn read_test() {
 
-//prelude (kinda pointless rn but whatev)
-pub mod prelude {
-    pub use crate::err::*;
-    pub use crate::fits::Fits as Fits;
-    pub use crate::header::Header as Header;
-    pub use crate::header_data_unit::HeaderDataUnit as HeaderDataUnit;
-    pub use crate::extensions::Extension as Extension;
+    let mut real = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    real.push(TABLE_FILE);
+
+    let mut fits = rsf::Fits::open(&real).unwrap();
+    print!("{fits}");
+
+    //Inspect the table
+    let (_h, xt) = fits.remove_hdu(1).unwrap().to_parts();
+    let tbl = match xt.unwrap() {
+        rsf::Extension::AsciiTable(tbl) => tbl,
+        _ => panic!()
+    };
+    println!("{tbl}");
 }
