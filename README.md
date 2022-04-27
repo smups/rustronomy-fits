@@ -46,7 +46,7 @@ _Writing Fits Files_
 To use the latest release of Rustronomy-fits in a cargo project, add the rustronomy-fits crate as a dependency to your `Cargo.toml` file:
 ```toml
 [dependencies]
-rustronomy-fits = "0.2"
+rustronomy-fits = "0.1.0"
 ```
 To use Rustronomy-fits in a Jupyter notebook, execute a cell containing the following code:
 ```rust
