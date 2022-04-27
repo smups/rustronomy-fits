@@ -2,3 +2,5 @@
 
 Cargo.lock
 target/
+
+resources/bench_out/
