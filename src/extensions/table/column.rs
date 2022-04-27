@@ -17,7 +17,7 @@
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-use std::{error::Error, fmt::Debug};
+use std::fmt::Debug;
 
 use dyn_clone::{DynClone, clone_trait_object};
 use rayon::prelude::*;
@@ -81,7 +81,7 @@ impl AsciiCol for Column<String> {
     fn push_entry(&mut self, entry: TableEntry) -> Result<(), TypeMisMatchErr> {
         match entry {
             TableEntry::Text(txt) => Ok(self.container.push(txt)),
-            other => Err(TypeMisMatchErr::new(TableEntry::txt(), &entry))
+            other => Err(TypeMisMatchErr::new(TableEntry::txt(), &other))
         }
     }
 
@@ -107,7 +107,7 @@ impl AsciiCol for Column<String> {
                     self.container[index] = txt;
                     Ok(())
                 }
-            } other => Err(TypeMisMatchErr::new(TableEntry::txt(), &entry).into())
+            } other => Err(TypeMisMatchErr::new(TableEntry::txt(), &other).into())
         }
     }
 
@@ -152,7 +152,7 @@ impl AsciiCol for Column<i64> {
     fn push_entry(&mut self, entry: TableEntry) -> Result<(),  TypeMisMatchErr> {
         match entry {
             TableEntry::Int(num) => Ok(self.container.push(num)),
-            other => Err(TypeMisMatchErr::new(TableEntry::int(), &entry))
+            other => Err(TypeMisMatchErr::new(TableEntry::int(), &other))
         }
     }
 
@@ -178,7 +178,7 @@ impl AsciiCol for Column<i64> {
                     self.container[index] = num;
                     Ok(())
                 }
-            } other => return Err(TypeMisMatchErr::new(TableEntry::int(), &entry).into())
+            } other => return Err(TypeMisMatchErr::new(TableEntry::int(), &other).into())
         }
     }
 
@@ -223,7 +223,7 @@ impl AsciiCol for Column<f64> {
     fn push_entry(&mut self, entry: TableEntry) -> Result<(), TypeMisMatchErr> {
         match entry {
             TableEntry::Float(num) => Ok(self.container.push(num)),
-            other => Err(TypeMisMatchErr::new(TableEntry::float(), &entry))
+            other => Err(TypeMisMatchErr::new(TableEntry::float(), &other))
         }
     }
 
@@ -249,7 +249,7 @@ impl AsciiCol for Column<f64> {
                     self.container[index] = num;
                     Ok(())
                 }
-            } other => return Err(TypeMisMatchErr::new(TableEntry::float(), &entry).into())
+            } other => return Err(TypeMisMatchErr::new(TableEntry::float(), &other).into())
         }
     }
 
