@@ -3,7 +3,8 @@
 
 # Rustronomy-fits - a Rustronomy tool for FITS file I/O
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-
+[![Crates.io](https://img.shields.io/crates/v/rustronomy-fits)](https://crates.io/crates/rustronomy-fits)
+![](https://img.shields.io/crates/d/rustronomy-fits)
 >![_This crate is part of the Rustronomy Project_](https://github.com/smups/rustronomy)
 
 Rustronomy-fits provides I/O tools for reading, writing and parsing FITS files. It is currently still under heavy development.
