@@ -5,43 +5,59 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Crates.io](https://img.shields.io/crates/v/rustronomy-fits)](https://crates.io/crates/rustronomy-fits)
 ![](https://img.shields.io/crates/d/rustronomy-fits)
->![_This crate is part of the Rustronomy Project_](https://github.com/smups/rustronomy)
+>[_This crate is part of the Rustronomy Project_](https://github.com/smups/rustronomy)
 
 Rustronomy-fits provides I/O tools for reading, writing and parsing FITS files. It is currently still under heavy development.
 
 > This repository was recently moved from rustronomy to the dedicated
 rustronomy-fits repo!
 
-### Features/Roadmap
-Rustronomy-fits will support the following features (features marked with ✔️ have already been implemented):
+## Features/Roadmap
+Features included in the latest release of rustronomy-fits are marked with ✔️.
+Features that are coming in the next release are marked with ✴️ (these might
+already be implemented in the main branch of this repo). Features that are coming
+some time in the future are marked with ❌.
+
+**Latest release:** v0.1.0 - image support <br>
+**Next feature-update:** v0.2.0 - table support
 
 _Reading Fits Files_
 - ✔️ Parsing FITS headers and keyword records
 - Parsing data in the primary HDU
   - ✔️ Images
-  - ❌ Tables
+  - ✴️ Tables
+  - ❌ Binary Tables
   - ❌ Random Groups
 - Parsing Extensions
   - ✔️ Images
-  - ❌ Tables
+  - ✴️ Tables
+  - ❌ Binary Tables
  
 _Writing Fits Files_
-- ✔️ Writing existing FITS files to disk
-- Constructing a HDU (including auto header) from
-  - ❌ an ndarray (to an Image)
-  - ❌ a table (to a table)
+- Writing existing FITS files to disk
+  - ✔️ Writing Headers to disk
+  - ✔️ Writing Image HDU's to Disk
+  - ✴️ Writing Table HDU's to Disk
+  - ❌ Writing a primary HDU with Random Groups to Disk
+  - ❌ Writing Binary Table HDU's to disk
+- ❌ Creating new (valid) FITS files
 
 # Quickstart
-To use Rustronomy-fits in a cargo project, add the rustronomy-fits crate as a dependency to your `Cargo.toml` file:
+To use the latest release of Rustronomy-fits in a cargo project, add the rustronomy-fits crate as a dependency to your `Cargo.toml` file:
 ```toml
 [dependencies]
 rustronomy-fits = "0.1.0"
 ```
 To use Rustronomy-fits in a Jupyter notebook, execute a cell containing the following code:
 ```rust
-:dep rustronomy-fits = {git = "https://github.com/smups/rustronomy-fits"}
+:dep rustronomy-fits = {version = "0.1"}
 ```
-### Short example: Importing a FITS image as a ndarray
+If you want to use the latest (unstable) development version of rustronomy-fits, you can do so by using the `git` field (which fetches the latest version from the repo) rather than the `version` field (which downloads the latest released version from crates.io). 
+```toml
+{git = "https://github.com/smups/rustronomy-fits"}
+```
+
+## Short example: Importing a FITS image as a ndarray
 In this example, we create a Fits struct using the `open()` method, which takes
 the path to the file as an argument. Next, we get a reference to the second
 header-data-unit (HDU) in the file, wich contains an `f64` encoded Image
@@ -61,7 +77,7 @@ let data_array = match fits.get_hdu(1).unwrap().get_data() {
 in-depth explanations and examples!**
 
 # Contributing
-### Notes on testing
+## Notes on testing
 If you want to contribute to this module, please keep in mind the following points regarding testing:
 - all I/O tests make use of the `resources/tests/` folder, located in the root of the `rustronomy_fits/` folder.
 - rustronomy_fits uses the python package astropy as a reference to validate FITS files written during tests. Make sure to setup a python virtual environment with astropy and numpy installed to run these tests.
