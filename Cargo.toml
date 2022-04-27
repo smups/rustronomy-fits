@@ -21,8 +21,18 @@ version = "0.1.0"
 edition = "2021"
 readme = "./README.md"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/smups/rustronomy/"
+repository = "https://github.com/smups/rustronomy-fits/"
+homepage = "https://github.com/smups/rustronomy-fits/"
 authors = ["Raúl Wolters <rawolters11@gmail.com>"]
+exclude = [
+    "examples/*",
+    "resources/*",
+    "tests/*",
+    "fits_standard40aa-le.pdf"
+]
+description = "a rust library for reading and writing fits files"
+keywords = ["astronomy", "astrophysics", "file-io", "FITS", "fits"]
+categories = ["science", "parsing"]
 
 [lib]
 crate-type = ["staticlib", "rlib"]
