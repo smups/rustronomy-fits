@@ -1,5 +1,5 @@
-![rustronomy_dark_banner](https://github.com/smups/rustronomy/blob/main/logos/Rustronomy-fits_github_banner_dark.png?raw=true#gh-light-mode-only)
-![rustronomy_light_banner](https://github.com/smups/rustronomy/blob/main/logos/Rustronomy-fits_github_banner_light.png#gh-dark-mode-only)
+![](https://github.com/smups/rustronomy/blob/main/logos/Rustronomy-fits_github_banner_dark.png?raw=true#gh-light-mode-only)
+![](https://github.com/smups/rustronomy/blob/main/logos/Rustronomy-fits_github_banner_light.png#gh-dark-mode-only)
 
 # Rustronomy-fits - a Rustronomy tool for FITS file I/O
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
