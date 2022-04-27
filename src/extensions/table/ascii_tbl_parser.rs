@@ -32,13 +32,12 @@ use crate::{
         raw_io::{RawFitsReader, RawFitsWriter}
     },
     extensions::{Extension, table::column::AsciiCol},
-    tbl_fmt_err::ParseError
+    tbl_fmt_err::{ParseError, InvalidFFCode}
 };
 
 use super::{AsciiTable, TableEntry, column::Column};
 
 use rayon::prelude::*;
-use simple_error::{SimpleError};
 
 pub struct AsciiTblParser{}
 impl AsciiTblParser{
@@ -133,7 +132,7 @@ impl AsciiTblParser{
     }
 
     fn setup_table(fmts: &Vec<TableEntryFormat>, labels: Option<Vec<String>>, size: usize)
-        -> Result<AsciiTable, Box<dyn Error>>
+        -> Result<AsciiTable, InvalidFFCode>
     {
         //(1) Use the column formats to set-up typed columns
         let mut cols = Vec::<Box<dyn AsciiCol>>::new();
@@ -158,9 +157,7 @@ impl AsciiTblParser{
                     };
                     cols.push(Box::new(Column::<f64>::new(label)));
                 } TableEntryFormat::Invalid(invld) => {
-                    return Err(Box::new(SimpleError::new(format!(
-                        "Error encountered while decoding table: {invld} is not a valid Fortran formatting code"
-                    ))));
+                    return Err(InvalidFFCode::new(invld.clone()));
                 }
             }
         }
