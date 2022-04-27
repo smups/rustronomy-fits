@@ -38,7 +38,6 @@ categories = ["science", "parsing"]
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-simple-error = "0.2"
 ndarray = "0.15"
 num-traits = "0.2"
 chrono = "0.4"
