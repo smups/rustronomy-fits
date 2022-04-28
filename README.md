@@ -9,9 +9,6 @@
 
 Rustronomy-fits provides I/O tools for reading, writing and parsing FITS files. It is currently still under heavy development.
 
-> This repository was recently moved from rustronomy to the dedicated
-rustronomy-fits repo!
-
 ## Features/Roadmap
 Features included in the latest release of rustronomy-fits are marked with ✔️.
 Features that are coming in the next release are marked with ✴️ (these might
