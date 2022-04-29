@@ -37,5 +37,17 @@ fn read_test() {
         rsf::Extension::AsciiTable(tbl) => tbl,
         _ => panic!()
     };
+
+    //Print table layout
     println!("{tbl}");
+
+    //Print formatted row with floats
+    println!("{:?}", tbl.get_fmtd_column(3).unwrap());
+
+    //Print formatted rows with ints
+    println!("{:?}", tbl.get_fmtd_column(19).unwrap());
+
+    //Print formatted rows with strings
+    println!("{:?}", tbl.get_fmtd_column(10).unwrap());
+
 }
