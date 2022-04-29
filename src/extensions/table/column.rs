@@ -16,8 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-use std::{fmt::Debug, f32::DIGITS};
+use std::fmt::Debug;
 
 use dyn_clone::{DynClone, clone_trait_object};
 use rayon::prelude::*;
