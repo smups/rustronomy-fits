@@ -42,6 +42,8 @@ impl TableEntryFormat {
     pub(crate) fn from_fortran_format_code(ff_code: &str)
         -> Result<TableEntryFormat, ParseIntError>
     {
+        use TableEntryFormat::*;
+
         //Formats are encoded as strings with the usual annoying {'}s around
         //them. We have to remove these and strip the string
         let parsed_code = ff_code.replace("'", "");
@@ -59,22 +61,22 @@ impl TableEntryFormat {
         if rem.len() == 2 {
             //These format types have both a {w} and a {d} value
             match dtype {
-                'F' | 'E' | 'D' => Ok(Self::Float((
+                'F' | 'E' | 'D' => Ok(Float((
                     str::parse::<usize>(rem[0])?,
                     str::parse::<usize>(rem[1])?
                 ))),
-                _ => Ok(Self::Invalid(String::from(parsed_code)))
+                _ => Ok(Invalid(String::from(parsed_code)))
             }
         } else if rem.len() == 1 {
             //These format types only have a w value
             match dtype {
-                'A' => Ok(Self::Char(str::parse::<usize>(rem[0])?)),
-                'I' => Ok(Self::Int(str::parse::<usize>(rem[0])?)),
-                _ => Ok(Self::Invalid(String::from(parsed_code)))
+                'A' => Ok(Char(str::parse::<usize>(rem[0])?)),
+                'I' => Ok(Int(str::parse::<usize>(rem[0])?)),
+                _ => Ok(Invalid(String::from(parsed_code)))
             }
         } else {
             //These are nonsensical formatting codes
-            Ok(Self::Invalid(String::from(parsed_code)))
+            Ok(Invalid(String::from(parsed_code)))
         }
     }
 

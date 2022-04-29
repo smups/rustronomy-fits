@@ -17,15 +17,18 @@
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-use std::fmt::Debug;
+use std::{fmt::Debug, f32::DIGITS};
 
 use dyn_clone::{DynClone, clone_trait_object};
 use rayon::prelude::*;
 
-use crate::tbl_err::{
-    IndexOutOfRangeErr,
-    TypeMisMatchErr,
-    TblDecodeErr
+use crate::{
+    tbl_err::{
+        IndexOutOfRangeErr,
+        TypeMisMatchErr,
+        TblDecodeErr
+    },
+    raw::table_entry_format::TableEntryFormat
 };
 
 use super::TableEntry;
@@ -56,6 +59,7 @@ pub(crate) trait AsciiCol: Debug + DynClone {
     //Other funcs
     fn len(&self) -> usize;
     fn get_col_label(&self) -> Option<&str>;
+    fn get_tbl_fmt(&self) -> TableEntryFormat;
     fn pretty_print(&self) -> String;
 
     /*  PRIVATE FUNCS
@@ -152,6 +156,16 @@ impl AsciiCol for Column<String> {
         }
     }
 
+    fn get_tbl_fmt(&self) -> TableEntryFormat {
+        //(1) Find the entry with the largest width, use it as return val
+        let width = self.container
+            .iter()
+            .fold(0, |acc, entry| acc.max(entry.len()));
+
+        //(R) return a Char tblfmt with specified width
+        TableEntryFormat::Char(width)
+    }
+
     fn pretty_print(&self) -> String {
         format!("label: {}, dtype: string", match &self.label {
             Some(label) => label,
@@ -192,7 +206,7 @@ impl AsciiCol for Column<i64> {
                     self.container[index] = num;
                     Ok(())
                 }
-            } other => return Err(TypeMisMatchErr::new(TableEntry::int(), &other).into())
+            } other => Err(TypeMisMatchErr::new(TableEntry::int(), &other))?
         }
     }
 
@@ -221,6 +235,16 @@ impl AsciiCol for Column<i64> {
             Some(label) => Some(label.as_str()),
             None => None
         }
+    }
+
+    fn get_tbl_fmt(&self) -> TableEntryFormat {
+        //(1) get the largest value, it'll be the longest
+        let width = self.container
+            .iter()
+            .fold(0, |acc, entry| acc.max(entry.abs() as usize));
+        
+        //(R) return width + 1 character for the sign of the integer
+        TableEntryFormat::Int(width + 1)
     }
 
     fn pretty_print(&self) -> String {
@@ -263,7 +287,7 @@ impl AsciiCol for Column<f64> {
                     self.container[index] = num;
                     Ok(())
                 }
-            } other => return Err(TypeMisMatchErr::new(TableEntry::float(), &other).into())
+            } other => Err(TypeMisMatchErr::new(TableEntry::float(), &other))?
         }
     }
 
@@ -283,7 +307,7 @@ impl AsciiCol for Column<f64> {
 
     fn to_ascii_vec(&self) -> Vec<String> {
         self.container.par_iter()
-            .map(|primitive| primitive.to_string())
+            .map(|primitive| format!("{primitive:.0$e}", DIGITS_AFTER_COMMA))
             .collect()
     }
 
@@ -292,6 +316,17 @@ impl AsciiCol for Column<f64> {
             Some(label) => Some(label.as_str()),
             None => None
         }
+    }
+
+    fn get_tbl_fmt(&self) -> TableEntryFormat {
+        //(1) Find the largest number -> it defines the width
+        let largest = self.container
+            .iter()
+            .fold(0.0f64, |acc, entry| acc.max(entry.abs()));
+        
+        //(R) width is width of largest number plus one for the sign
+        let width = format!("{largest:.0$e}", DIGITS_AFTER_COMMA).len() + 1;
+        TableEntryFormat::Float((width, DIGITS_AFTER_COMMA))
     }
 
     fn pretty_print(&self) -> String {
