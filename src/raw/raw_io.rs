@@ -26,7 +26,7 @@ use std::{
 
 use crate::io_err::{
     self,
-    InvalidFitsFileErr as IFFErr
+    InvalidFitsFileErr
 };
 
 //Get block size from root
@@ -60,7 +60,7 @@ impl RawFitsReader {
         
         if meta.len() as usize % BLOCK_SIZE != 0 {
             //Throw an error for files that are not integer multiples of 2880
-            return Err(Box::new(IFFErr::new(io_err::FILE_BLOCK_DIV)));
+            return Err(Box::new(InvalidFitsFileErr::new(io_err::FILE_BLOCK_DIV)));
         }
         let n_blocks = meta.len() as usize / BLOCK_SIZE;
 
@@ -74,20 +74,20 @@ impl RawFitsReader {
     }
 
     pub(crate) fn read_blocks(&mut self, buffer: &mut [u8])
-        -> Result<usize, IFFErr>
+        -> Result<usize, InvalidFitsFileErr>
     {
         //(1) Calculate how many header blocks we have to read
         let n_blocks = buffer.len() / BLOCK_SIZE;
 
         //(2) Check if the buffer is an integer multiple of a FITS block
         if n_blocks * BLOCK_SIZE != buffer.len() {
-            return Err(IFFErr::new(io_err::BUF_BLOCK_DIV));
+            return Err(InvalidFitsFileErr::new(io_err::BUF_BLOCK_DIV));
         }
         
         //(3) Check if the number of header blocks we need to read does not exceed
         //the number of header blocks still left in the file
         if n_blocks > (self.n_fits_blocks - self.block_index) {
-            return Err(IFFErr::new(io_err::FILE_END));
+            return Err(InvalidFitsFileErr::new(io_err::FILE_END));
         }
 
         //(4) Read the data (panic if this fails, since it fucks up the indexing)
@@ -127,7 +127,7 @@ impl RawFitsWriter {
     {
         //(1) Check if the buffer is an integer number of FITS blocks
         if buffer.len() % BLOCK_SIZE != 0 {
-            return Err(Box::new(IFFErr::new(io_err::BUF_BLOCK_DIV)));
+            return Err(Box::new(InvalidFitsFileErr::new(io_err::BUF_BLOCK_DIV)));
         }
 
         //(2) Write the thing

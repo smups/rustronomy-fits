@@ -30,11 +30,20 @@ use crate::tbl_err::{
 
 use super::TableEntry;
 
-pub trait AsciiCol: Debug + DynClone {
+/*  Fixed number of digits after comma
+    This value is fixed by the maximum number of digits in the mantissa of a 
+    64-bit floating point number. All f64 values will be encoded as having the
+    full 15 digits.
+*/
+const DIGITS_AFTER_COMMA: usize = 15;
+
+pub(crate) trait AsciiCol: Debug + DynClone {
     /*  PUBLIC API
         End-users will recieve a Table struct containing boxed columns. They
         may modify the entries in each column, or remove/replace/reorder columns.
-        All user interaction with columns is defined in this trait.
+        They cannot, however, directly interface with the columns themselves.
+        All user interaction (which is indirect, goes through table) with
+        columns is defined in this trait.
     */
 
     //Funcs for modifying/adding/removing entries in the column
@@ -44,13 +53,18 @@ pub trait AsciiCol: Debug + DynClone {
     fn get_entry(&self, index: usize) -> Option<TableEntry>;
     fn remove_entry(&mut self, index: usize) -> Option<TableEntry>;
 
-    //Funcs for properly encoding/decoding
-    fn to_ascii_vec(&self) -> Vec<String>;
-
     //Other funcs
     fn len(&self) -> usize;
     fn get_col_label(&self) -> Option<&str>;
     fn pretty_print(&self) -> String;
+
+    /*  PRIVATE FUNCS
+        These funcs are used for decoding and encoding columns. Not to be used
+        by the end user
+    */
+
+    //Funcs for properly encoding/decoding
+    fn to_ascii_vec(&self) -> Vec<String>;
 }
 
 //This macro makes Col a clonable trait object

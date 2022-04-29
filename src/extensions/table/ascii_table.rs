@@ -97,14 +97,6 @@ impl AsciiTable {
         }
     }
 
-    pub fn get_column(&self, index: usize) -> Option<&dyn AsciiCol> {
-        //returns a reference to a column in the table
-        match self.cols.get(index) {
-            Some(boxed) => Some(boxed.as_ref()),
-            None => None
-        }
-    }
-
     pub fn get_shape(&self) -> (usize, usize) {
         //returns shape (columns, rows) of table
         (self.cols.len(), self.max_col_len())

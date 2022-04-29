@@ -105,8 +105,12 @@ impl AsciiTblParser{
             .par_chunks_exact(chars_in_row)
             .map(|raw| Self::split_row(raw, &row_index_col_start, &field_lengs))
             .collect::<Vec<Result<Vec<&str>, Utf8Error>>>();
-        let mut split_rows: Vec<Vec<&str>> = split_rows_err.into_iter()
+
+        //Because of the limitations of rayon we must unpack the errors sequentially
+        let mut split_rows: Vec<Vec<&str>> = split_rows_err
+            .into_iter()
             .collect::<Result<Vec<Vec<&str>>, Utf8Error>>()?;
+
         //Since we read in blocks of 2880 bytes, we might've read too much (some
         //rows may just contain zeroes). We fix this by throwing some rows away.
         split_rows.resize(rows_in_file, vec!["ERROR"]);
@@ -121,6 +125,8 @@ impl AsciiTblParser{
                 .collect::<Result<Vec<TableEntry>, ParseError>>()
             })
             .collect::<Vec<Result<Vec<TableEntry>, ParseError>>>();
+            
+        //Because of the limitations of rayon we must unpack the errors sequentially
         let fmtd_rows = fmtd_rows_err.into_iter()
             .collect::<Result<Vec<Vec<TableEntry>>, ParseError>>()?;
 
@@ -193,6 +199,18 @@ impl AsciiTblParser{
         let mut string_cols = tbl.destroy();
         string_cols.iter_mut()
             .for_each(|col| col.resize_with(col_len, || String::from(" ")));
+
+        /*  (2)
+            Not just all columns, but also all rows must consist of the same
+            number of characters. Not all fields are the same size, nor are all
+            entries in a column guaranteed to be the same length. Hence we must
+                1. find the maximum character length of each column
+                2. add all the widest columns together to find the largest row,
+                   which will then be the row length of our entire encoded FITS
+                   table.
+            After we have done this, we must ensure that all entries in a column
+            start at the same index in each row.
+        */
 
         todo!()
     }
