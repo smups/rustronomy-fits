@@ -20,7 +20,10 @@
 use std::{fmt::{Display, Formatter, self}, error::Error};
 
 use crate::{
-    raw::BlockSized,
+    raw::{
+        BlockSized,
+        table_entry_format::TableEntryFormat
+    },
     extensions::ExtensionPrint,
     tbl_err::IndexOutOfRangeErr,
     tbl_err::ShapeMisMatchErr
@@ -100,6 +103,20 @@ impl AsciiTable {
     pub fn get_shape(&self) -> (usize, usize) {
         //returns shape (columns, rows) of table
         (self.cols.len(), self.max_col_len())
+    }
+
+    pub fn get_fmtd_column(&self, col: usize) -> Option<Vec<String>> {
+        match self.cols.get(col) {
+            None => None,
+            Some(column) => Some(column.to_ascii_vec())
+        }
+    }
+
+    pub(crate) fn get_col_fmt(&self, col: usize) -> Option<TableEntryFormat> {
+        match self.cols.get(col) {
+            None => None,
+            Some(column) => Some(column.get_tbl_fmt())
+        }
     }
 
     /*
