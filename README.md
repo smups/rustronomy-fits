@@ -50,7 +50,7 @@ To use Rustronomy-fits in a Jupyter notebook, execute a cell containing the foll
 :dep rustronomy-fits = {version = "0.1"}
 ```
 If you want to use the latest (unstable) development version of rustronomy-fits, you can do so by using the `git` field (which fetches the latest version from the repo) rather than the `version` field (which downloads the latest released version from crates.io). 
-```toml
+```
 {git = "https://github.com/smups/rustronomy-fits"}
 ```
 
@@ -64,7 +64,7 @@ the unwrapped Image.
 ```rust
 use rustronomy_fits::prelude::*;
 
-let fits = Fits::open(&Path::from("somefile.fits"))?;
+let fits = Fits::open("somefile.fits")?;
 let data_array = match fits.get_hdu(1).unwrap().get_data() {
   Extension::Image(img) => img.as_f64_array()?,
   _ => panic!()
