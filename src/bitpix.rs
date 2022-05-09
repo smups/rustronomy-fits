@@ -39,27 +39,29 @@ impl Bitpix {
     pub(crate) fn from_code(code: &isize)
         -> Result<Bitpix, InvalidRecordValueError>
     {
+        use Bitpix::*;
         match code {
-            8 => Ok(Bitpix::Byte),
-            16 => Ok(Bitpix::Short),
-            32 => Ok(Bitpix::Int),
-            64 => Ok(Bitpix::Long),
-            -32 => Ok(Bitpix::Spf),
-            -64 => Ok(Bitpix::Dpf),
+            8 => Ok(Byte),
+            16 => Ok(Short),
+            32 => Ok(Int),
+            64 => Ok(Long),
+            -32 => Ok(Spf),
+            -64 => Ok(Dpf),
             other => Err(InvalidRecordValueError::new(
-                "BITPIX", &code.to_string(), &VALID_BITPIX_VALUES)
+                "BITPIX", &other.to_string(), &VALID_BITPIX_VALUES)
             ) 
         }
     }
 
     pub(crate) fn to_code(&self) -> isize {
+        use Bitpix::*;
         match self {
-            &Self::Byte => 8,
-            &Self::Short => 16,
-            &Self::Int => 32,
-            &Self::Long => 64,
-            &Self::Spf => -32,
-            &Self::Dpf => -64
+            Byte => 8,
+            Short => 16,
+            Int => 32,
+            Long => 64,
+            Spf => -32,
+            Dpf => -64
         }
     }
 
