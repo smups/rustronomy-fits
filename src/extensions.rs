@@ -17,7 +17,10 @@
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-use std::{fmt::Display, error::Error};
+use std::{
+    fmt::{Display, Formatter},
+    error::Error
+};
 
 use crate::{
     raw::{BlockSized, raw_io::RawFitsWriter},
@@ -48,20 +51,22 @@ pub enum Extension{
 
 impl BlockSized for Extension {
     fn get_block_len(&self) -> usize {
+        use Extension::*;
         match &self {
-            Self::Corrupted => 0, //corrupted data is disregarded
-            Self::Image(img) => img.get_block_len(),
-            Self::AsciiTable(tbl) => tbl.get_block_len()
+            Corrupted => 0, //corrupted data is disregarded
+            Image(img) => img.get_block_len(),
+            AsciiTable(tbl) => tbl.get_block_len()
         }
     }
 }
 
 impl Display for Extension {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use Extension::*;
         match &self {
-            Self::Corrupted => write!(f, "(CORRUPTED_DATA)"),
-            Self::Image(img) => write!(f, "{}", img.xprint()),
-            Self::AsciiTable(tbl) => write!(f, "{}", tbl.xprint())
+            Corrupted => write!(f, "(CORRUPTED_DATA)"),
+            Image(img) => write!(f, "{}", img.xprint()),
+            AsciiTable(tbl) => write!(f, "{}", tbl.xprint())
         }
     }
 }
@@ -70,14 +75,11 @@ impl Extension {
     pub(crate) fn write_to_buffer(self, writer: &mut RawFitsWriter)
         -> Result<(), Box<dyn Error>>
     {
+        use Extension::*;
         match self {
-            Self::Corrupted => return Err(Box::new(IFFErr::new(io_err::CORRUPTED))),
-            Self::Image(img) => {
-                ImgParser::encode_img(img, writer)
-            },
-            Self::AsciiTable(tbl) => {
-                AsciiTblParser::encode_tbl(tbl, writer)
-            }
+            Corrupted => return Err(Box::new(IFFErr::new(io_err::CORRUPTED))),
+            Image(img) => ImgParser::encode_img(img, writer),
+            AsciiTable(tbl) => AsciiTblParser::encode_tbl(tbl, writer)
         }
     }
 }
