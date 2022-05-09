@@ -63,7 +63,7 @@ impl TableEntry {
             } Float(_) => {
                 Self::Float(str::parse(raw_field.trim())?)
             } Invalid(invalid_format) => {
-                return Err(InvalidFFCode::new(format.to_string()).into());
+                return Err(InvalidFFCode::new(invalid_format.to_string()).into());
             }
         })
     }

@@ -47,47 +47,38 @@ pub enum TypedImage {
 
 impl BlockSized for TypedImage {
     fn get_block_len(&self) -> usize {
+        use TypedImage::*;
         match self {
-            Self::ByteImg(var) => var.get_block_len(),
-            Self::I16Img(var) => var.get_block_len(),
-            Self::I32Img(var) => var.get_block_len(),
-            Self::I64Img(var) => var.get_block_len(),
-            Self::SpfImg(var) => var.get_block_len(),
-            Self::DpfImg(var) => var.get_block_len()
+            ByteImg(var) => var.get_block_len(),
+            I16Img(var) => var.get_block_len(),
+            I32Img(var) => var.get_block_len(),
+            I64Img(var) => var.get_block_len(),
+            SpfImg(var) => var.get_block_len(),
+            DpfImg(var) => var.get_block_len()
         }
     }
 }
 
 impl ExtensionPrint for TypedImage {
-    fn xprint(&self) -> String{
+    fn xprint(&self) -> String {
+        use TypedImage::*;
         let mut f = String::from("(IMAGE) - ");
+
         match self {
-            Self::ByteImg(img) => {
-               write!(f, "datatype: u8, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()
-                )
-            } Self::I16Img(img) => {
-                write!(f, "datatype: i16, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()
-                )
-            } Self::I32Img(img) => {
-                write!(f, "datatype: i32, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()
-                )
-            } Self::I64Img(img) => {
-                write!(f, "datatype: i64, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()
-                )
-            } Self::SpfImg(img) => {
-                write!(f, "datatype: f32, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()
-                )
-            } Self::DpfImg(img) => {
-                write!(f, "datatype: f64, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()
-                )
-            }
-       }.unwrap();
+            ByteImg(img) => write!(f, "datatype: u8, shape: {}, size: {}",
+                    img.pretty_print_shape(), img.get_block_len()),
+            I16Img(img) => write!(f, "datatype: i16, shape: {}, size: {}",
+                    img.pretty_print_shape(), img.get_block_len()),
+            I32Img(img) => write!(f, "datatype: i32, shape: {}, size: {}",
+                    img.pretty_print_shape(), img.get_block_len()),
+            I64Img(img) => write!(f, "datatype: i64, shape: {}, size: {}",
+                    img.pretty_print_shape(), img.get_block_len()),
+            SpfImg(img) => write!(f, "datatype: f32, shape: {}, size: {}",
+                    img.pretty_print_shape(), img.get_block_len()),
+            DpfImg(img) => write!(f, "datatype: f64, shape: {}, size: {}",
+                    img.pretty_print_shape(), img.get_block_len())
+        }.unwrap();
+
        return f;
     }
 }

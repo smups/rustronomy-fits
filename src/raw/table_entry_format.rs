@@ -23,7 +23,10 @@
     contains the machinery to convert these codes to enum variants.
 */
 
-use std::{fmt::Display, num::ParseIntError};
+use std::{
+    fmt::{Display, Formatter},
+    num::ParseIntError
+};
 
 use crate::tbl_fmt_err::{
     InvalidFFCode as IFFCErr
@@ -81,31 +84,34 @@ impl TableEntryFormat {
     }
 
     pub(crate) fn to_fortran_format_code(&self) -> Result<String, IFFCErr> {
+        use TableEntryFormat::*;
         Ok(match &self {
-            Self::Char(w) => format!("A{w}"),
-            Self::Int(w) => format!("I{w}"),
-            Self::Float((w, d)) => format!("E{w}.{d}"),
-            Self::Invalid(val) => return Err(IFFCErr::new(val.to_string()))
+            Char(w) => format!("A{w}"),
+            Int(w) => format!("I{w}"),
+            Float((w, d)) => format!("E{w}.{d}"),
+            Invalid(val) => return Err(IFFCErr::new(val.to_string()))
         })
     }
 
     pub(crate) fn get_field_width(&self) -> usize {
+        use TableEntryFormat::*;
         match self {
-            Self::Char(w) => *w,
-            Self::Int(w) => *w,
-            Self::Float((w, _d)) => *w,
-            Self::Invalid(string) => string.len()
+            Char(w) => *w,
+            Int(w) => *w,
+            Float((w, _d)) => *w,
+            Invalid(string) => string.len()
         }
     }
 }
 
 impl Display for TableEntryFormat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use TableEntryFormat::*;
         write!(f, "{}", match self {
-            Self::Char(_) => "string",
-            Self::Int(_) => "integer",
-            Self::Float(_) => "float",
-            Self::Invalid(_) => "INVALID"
+            Char(_) => "string",
+            Int(_) => "integer",
+            Float(_) => "float",
+            Invalid(_) => "INVALID"
         })?;
         Ok(())
     }

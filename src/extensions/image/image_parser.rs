@@ -63,13 +63,16 @@ impl ImgParser{
     pub(crate) fn decode_img(reader: &mut RawFitsReader, shape: &Vec<usize>, bitpix: Bitpix)
         -> Result<Extension, Box<dyn Error>>
     {
+        use Bitpix::*;
+        use TypedImage::*;
+
         Ok(Extension::Image(match bitpix {
-            Bitpix::Byte => TypedImage::ByteImg(Self::decode_helper::<u8>(reader, shape)?),
-            Bitpix::Short => TypedImage::I16Img(Self::decode_helper::<i16>(reader, shape)?),
-            Bitpix::Int => TypedImage::I32Img(Self::decode_helper::<i32>(reader, shape)?),
-            Bitpix::Long => TypedImage::I64Img(Self::decode_helper::<i64>(reader, shape)?),
-            Bitpix::Spf => TypedImage::SpfImg(Self::decode_helper::<f32>(reader, shape)?),
-            Bitpix::Dpf => TypedImage::DpfImg(Self::decode_helper::<f64>(reader, shape)?)
+            Byte => ByteImg(Self::decode_helper::<u8>(reader, shape)?),
+            Short => I16Img(Self::decode_helper::<i16>(reader, shape)?),
+            Int => I32Img(Self::decode_helper::<i32>(reader, shape)?),
+            Long => I64Img(Self::decode_helper::<i64>(reader, shape)?),
+            Spf => SpfImg(Self::decode_helper::<f32>(reader, shape)?),
+            Dpf => DpfImg(Self::decode_helper::<f64>(reader, shape)?)
         }))
     }
 
@@ -156,13 +159,15 @@ impl ImgParser{
     {
         //This function only matches the typed image and calls the appropriate
         //helper function
+        use TypedImage::*;
+
         match typed_img {
-            TypedImage::ByteImg(img) => Self::encode_helper(img, writer)?,
-            TypedImage::I16Img(img) => Self::encode_helper(img, writer)?,
-            TypedImage::I32Img(img) => Self::encode_helper(img, writer)?,
-            TypedImage::I64Img(img) => Self::encode_helper(img, writer)?,
-            TypedImage::SpfImg(img) => Self::encode_helper(img, writer)?,
-            TypedImage::DpfImg(img) => Self::encode_helper(img, writer)?,
+            ByteImg(img) => Self::encode_helper(img, writer)?,
+            I16Img(img) => Self::encode_helper(img, writer)?,
+            I32Img(img) => Self::encode_helper(img, writer)?,
+            I64Img(img) => Self::encode_helper(img, writer)?,
+            SpfImg(img) => Self::encode_helper(img, writer)?,
+            DpfImg(img) => Self::encode_helper(img, writer)?,
         }
 
         //(R) this went ok
