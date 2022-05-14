@@ -87,7 +87,7 @@ impl AsciiTable {
     pub fn get_entry(&self, col: usize, row: usize)
         -> Result<TableEntry, IndexOutOfRangeErr>
     {
-        //returns a reference to an entry in the table, if it exists
+        //returns an entry in the table, if it exists
         
         //(1) Check if the column index is valid -> if yes, get the column
         if col >= self.cols.len() {return Err(IndexOutOfRangeErr::new((col, row), self));}
@@ -112,6 +112,10 @@ impl AsciiTable {
         }
     }
 
+    /*
+        INTERNAL FUNCS
+    */
+
     pub(crate) fn get_col_fmt(&self, col: usize) -> Option<TableEntryFormat> {
         match self.cols.get(col) {
             None => None,
@@ -119,9 +123,10 @@ impl AsciiTable {
         }
     }
 
-    /*
-        INTERNAL FUNCS
-    */
+    pub(crate) fn get_tbl_fmt(&self) -> Vec<TableEntryFormat> {
+        self.cols.iter().map(|col| col.get_tbl_fmt()).collect()
+    }
+
     pub(crate) fn new_sized(cols: Vec<Box<dyn AsciiCol>>, size: usize) -> Self {
         //creates new table with known blocksize
         AsciiTable { cols: cols, block_size: Some(size) }
@@ -153,6 +158,6 @@ impl AsciiTable {
 
     pub(crate) fn max_col_len(&self) -> usize {
         //returns size of longest column in table
-        self.cols.iter().fold(0, |max, col| 0.max(col.len()))
+        self.cols.iter().fold(0, |max_len, col| max_len.max(col.len()))
     }
 }
