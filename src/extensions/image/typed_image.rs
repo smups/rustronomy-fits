@@ -27,7 +27,8 @@ use ndarray::{Array, IxDyn};
 use crate::{
     raw::BlockSized,
     extensions::ExtensionPrint,
-    img_err::WrongImgTypeErr as WITErr, bitpix::Bitpix
+    img_err::WrongImgTypeErr as WITErr,
+    bitpix::Bitpix
 };
 
 use super::generic_image::Image;
