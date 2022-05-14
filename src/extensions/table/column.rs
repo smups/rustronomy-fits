@@ -58,7 +58,7 @@ pub(crate) trait AsciiCol: Debug + DynClone {
     //Other funcs
     fn len(&self) -> usize;
     fn get_col_label(&self) -> Option<&str>;
-    fn get_tbl_fmt(&self) -> TableEntryFormat;
+    fn get_col_fmt(&self) -> TableEntryFormat;
     fn pretty_print(&self) -> String;
 
     /*  PRIVATE FUNCS
@@ -155,7 +155,7 @@ impl AsciiCol for Column<String> {
         }
     }
 
-    fn get_tbl_fmt(&self) -> TableEntryFormat {
+    fn get_col_fmt(&self) -> TableEntryFormat {
         //(1) Find the entry with the largest width, use it as return val
         let width = self.container
             .iter()
@@ -236,7 +236,7 @@ impl AsciiCol for Column<i64> {
         }
     }
 
-    fn get_tbl_fmt(&self) -> TableEntryFormat {
+    fn get_col_fmt(&self) -> TableEntryFormat {
         //(1) get the largest value, it'll be the longest
         let width = self.container
             .iter()
@@ -317,7 +317,7 @@ impl AsciiCol for Column<f64> {
         }
     }
 
-    fn get_tbl_fmt(&self) -> TableEntryFormat {
+    fn get_col_fmt(&self) -> TableEntryFormat {
         //(1) Find the largest number -> it defines the width
         let largest = self.container
             .iter()

@@ -119,12 +119,12 @@ impl AsciiTable {
     pub(crate) fn get_col_fmt(&self, col: usize) -> Option<TableEntryFormat> {
         match self.cols.get(col) {
             None => None,
-            Some(column) => Some(column.get_tbl_fmt())
+            Some(column) => Some(column.get_col_fmt())
         }
     }
 
     pub(crate) fn get_tbl_fmt(&self) -> Vec<TableEntryFormat> {
-        self.cols.iter().map(|col| col.get_tbl_fmt()).collect()
+        self.cols.iter().map(|col| col.get_col_fmt()).collect()
     }
 
     pub(crate) fn new_sized(cols: Vec<Box<dyn AsciiCol>>, size: usize) -> Self {
