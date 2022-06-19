@@ -124,7 +124,7 @@ impl ImgParser{
                 Next we'll use rayon to chop the buffer into entry_size sized
                 pieces, each of which may then be converted into the type T.
             */
-            let mut typed_buf: Vec<T> = (&buf).par_chunks(entry_size)
+            let mut typed_buf: Vec<T> = buf.par_chunks(entry_size)
                 .map(|val| T::from_bytes(val))
                 .collect();
 
