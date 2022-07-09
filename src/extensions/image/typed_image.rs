@@ -1,194 +1,214 @@
 /*
     Copyright (C) 2022 Raúl Wolters
-    
+
     This file is part of rustronomy-fits.
-    
+
     rustronomy is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-    
+
     rustronomy is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-    
+
     You should have received a copy of the GNU General Public License
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 use std::{
-    fmt::{Display, Write},
-    error::Error
+  error::Error,
+  fmt::{Display, Write},
 };
 
 use ndarray::{Array, IxDyn};
 
 use crate::{
-    raw::BlockSized,
-    extensions::ExtensionPrint,
-    img_err::WrongImgTypeErr as WITErr,
-    bitpix::Bitpix
+  bitpix::Bitpix, extensions::ExtensionPrint, img_err::WrongImgTypeErr as WITErr, raw::BlockSized,
 };
 
 use super::generic_image::Image;
 
 #[derive(Debug, Clone)]
 pub enum TypedImage {
-    /*  THIS ENUM IS PART OF THE USER-FACING API
-        Users obtain a TypedImage variant when parsing a FITS Image.    
-    */
-    ByteImg(Image<u8>),
-    I16Img(Image<i16>),
-    I32Img(Image<i32>),
-    I64Img(Image<i64>),
-    SpfImg(Image<f32>),
-    DpfImg(Image<f64>)
+  /*  THIS ENUM IS PART OF THE USER-FACING API
+      Users obtain a TypedImage variant when parsing a FITS Image.
+  */
+  ByteImg(Image<u8>),
+  I16Img(Image<i16>),
+  I32Img(Image<i32>),
+  I64Img(Image<i64>),
+  SpfImg(Image<f32>),
+  DpfImg(Image<f64>),
 }
 
 impl BlockSized for TypedImage {
-    fn get_block_len(&self) -> usize {
-        use TypedImage::*;
-        match self {
-            ByteImg(var) => var.get_block_len(),
-            I16Img(var) => var.get_block_len(),
-            I32Img(var) => var.get_block_len(),
-            I64Img(var) => var.get_block_len(),
-            SpfImg(var) => var.get_block_len(),
-            DpfImg(var) => var.get_block_len()
-        }
+  fn get_block_len(&self) -> usize {
+    use TypedImage::*;
+    match self {
+      ByteImg(var) => var.get_block_len(),
+      I16Img(var) => var.get_block_len(),
+      I32Img(var) => var.get_block_len(),
+      I64Img(var) => var.get_block_len(),
+      SpfImg(var) => var.get_block_len(),
+      DpfImg(var) => var.get_block_len(),
     }
+  }
 }
 
 impl ExtensionPrint for TypedImage {
-    fn xprint(&self) -> String {
-        use TypedImage::*;
-        let mut f = String::from("(IMAGE) - ");
+  fn xprint(&self) -> String {
+    use TypedImage::*;
+    let mut f = String::from("(IMAGE) - ");
 
-        match self {
-            ByteImg(img) => write!(f, "datatype: u8, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()),
-            I16Img(img) => write!(f, "datatype: i16, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()),
-            I32Img(img) => write!(f, "datatype: i32, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()),
-            I64Img(img) => write!(f, "datatype: i64, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()),
-            SpfImg(img) => write!(f, "datatype: f32, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len()),
-            DpfImg(img) => write!(f, "datatype: f64, shape: {}, size: {}",
-                    img.pretty_print_shape(), img.get_block_len())
-        }.unwrap();
-
-       return f;
+    match self {
+      ByteImg(img) => write!(
+        f,
+        "datatype: u8, shape: {}, size: {}",
+        img.pretty_print_shape(),
+        img.get_block_len()
+      ),
+      I16Img(img) => write!(
+        f,
+        "datatype: i16, shape: {}, size: {}",
+        img.pretty_print_shape(),
+        img.get_block_len()
+      ),
+      I32Img(img) => write!(
+        f,
+        "datatype: i32, shape: {}, size: {}",
+        img.pretty_print_shape(),
+        img.get_block_len()
+      ),
+      I64Img(img) => write!(
+        f,
+        "datatype: i64, shape: {}, size: {}",
+        img.pretty_print_shape(),
+        img.get_block_len()
+      ),
+      SpfImg(img) => write!(
+        f,
+        "datatype: f32, shape: {}, size: {}",
+        img.pretty_print_shape(),
+        img.get_block_len()
+      ),
+      DpfImg(img) => write!(
+        f,
+        "datatype: f64, shape: {}, size: {}",
+        img.pretty_print_shape(),
+        img.get_block_len()
+      ),
     }
+    .unwrap();
+
+    return f;
+  }
 }
 
 impl Display for TypedImage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-       //TODO: make pretty display for image!
-       todo!()
-    }
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    //TODO: make pretty display for image!
+    todo!()
+  }
 }
 
 impl TypedImage {
+  pub(crate) fn bpx(&self) -> Bitpix {
+    use Bitpix::*;
+    use TypedImage::*;
 
-    pub(crate) fn bpx(&self) -> Bitpix {
-        use Bitpix::*;
-        use TypedImage::*;
-
-        match self {
-            ByteImg(_) => Byte,
-            I16Img(_) => Short,
-            I32Img(_) => Int,
-            I64Img(_) => Long,
-            SpfImg(_) => Spf,
-            DpfImg(_) => Dpf
-        }
+    match self {
+      ByteImg(_) => Byte,
+      I16Img(_) => Short,
+      I32Img(_) => Int,
+      I64Img(_) => Long,
+      SpfImg(_) => Spf,
+      DpfImg(_) => Dpf,
     }
+  }
 
-    pub fn as_u8_array(&self) -> Result<&Array<u8, IxDyn>, Box<dyn Error>> {
-        match &self {
-            Self::ByteImg(img) => Ok(img.get_data()),
-            &var => Err(Box::new(WITErr::new(var, Bitpix::byte())))
-        }
+  pub fn as_u8_array(&self) -> Result<&Array<u8, IxDyn>, Box<dyn Error>> {
+    match &self {
+      Self::ByteImg(img) => Ok(img.get_data()),
+      &var => Err(Box::new(WITErr::new(var, Bitpix::byte()))),
     }
+  }
 
-    pub fn as_i16_array(&self) -> Result<&Array<i16, IxDyn>, Box<dyn Error>> {
-        match &self {
-            Self::I16Img(img) => Ok(img.get_data()),
-            &var => Err(Box::new(WITErr::new(var, Bitpix::short())))
-        }
+  pub fn as_i16_array(&self) -> Result<&Array<i16, IxDyn>, Box<dyn Error>> {
+    match &self {
+      Self::I16Img(img) => Ok(img.get_data()),
+      &var => Err(Box::new(WITErr::new(var, Bitpix::short()))),
     }
+  }
 
-    pub fn as_i32_array(&self) -> Result<&Array<i32, IxDyn>, Box<dyn Error>> {
-        match &self {
-            Self::I32Img(img) => Ok(img.get_data()),
-            &var => Err(Box::new(WITErr::new(var, Bitpix::int())))
-        }
+  pub fn as_i32_array(&self) -> Result<&Array<i32, IxDyn>, Box<dyn Error>> {
+    match &self {
+      Self::I32Img(img) => Ok(img.get_data()),
+      &var => Err(Box::new(WITErr::new(var, Bitpix::int()))),
     }
+  }
 
-    pub fn as_i64_array(&self) -> Result<&Array<i64, IxDyn>, Box<dyn Error>> {
-        match &self {
-            Self::I64Img(img) => Ok(img.get_data()),
-            &var => Err(Box::new(WITErr::new(var, Bitpix::long())))
-        }
+  pub fn as_i64_array(&self) -> Result<&Array<i64, IxDyn>, Box<dyn Error>> {
+    match &self {
+      Self::I64Img(img) => Ok(img.get_data()),
+      &var => Err(Box::new(WITErr::new(var, Bitpix::long()))),
     }
+  }
 
-    pub fn as_f32_array(&self) -> Result<&Array<f32, IxDyn>, Box<dyn Error>> {
-        match &self {
-            Self::SpfImg(img) => Ok(img.get_data()),
-            &var => Err(Box::new(WITErr::new(var, Bitpix::spf())))
-        }
+  pub fn as_f32_array(&self) -> Result<&Array<f32, IxDyn>, Box<dyn Error>> {
+    match &self {
+      Self::SpfImg(img) => Ok(img.get_data()),
+      &var => Err(Box::new(WITErr::new(var, Bitpix::spf()))),
     }
+  }
 
-    pub fn as_f64_array(&self) -> Result<&Array<f64, IxDyn>, Box<dyn Error>> {
-        match &self {
-            Self::DpfImg(img) => Ok(img.get_data()),
-            &var => Err(Box::new(WITErr::new(var, Bitpix::dpf())))
-        }
+  pub fn as_f64_array(&self) -> Result<&Array<f64, IxDyn>, Box<dyn Error>> {
+    match &self {
+      Self::DpfImg(img) => Ok(img.get_data()),
+      &var => Err(Box::new(WITErr::new(var, Bitpix::dpf()))),
     }
+  }
 
-    pub fn as_owned_u8_array(self) -> Result<Array<u8, IxDyn>, Box<dyn Error>> {
-        match self {
-            Self::ByteImg(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(WITErr::new(&var, Bitpix::byte())))
-        }
+  pub fn as_owned_u8_array(self) -> Result<Array<u8, IxDyn>, Box<dyn Error>> {
+    match self {
+      Self::ByteImg(img) => Ok(img.get_data_owned()),
+      var => Err(Box::new(WITErr::new(&var, Bitpix::byte()))),
     }
+  }
 
-    pub fn as_owned_i16_array(self) -> Result<Array<i16, IxDyn>, Box<dyn Error>> {
-        match self {
-            Self::I16Img(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(WITErr::new(&var, Bitpix::short())))
-        }
+  pub fn as_owned_i16_array(self) -> Result<Array<i16, IxDyn>, Box<dyn Error>> {
+    match self {
+      Self::I16Img(img) => Ok(img.get_data_owned()),
+      var => Err(Box::new(WITErr::new(&var, Bitpix::short()))),
     }
+  }
 
-    pub fn as_owned_i32_array(self) -> Result<Array<i32, IxDyn>, Box<dyn Error>> {
-        match self {
-            Self::I32Img(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(WITErr::new(&var, Bitpix::int())))
-        }
+  pub fn as_owned_i32_array(self) -> Result<Array<i32, IxDyn>, Box<dyn Error>> {
+    match self {
+      Self::I32Img(img) => Ok(img.get_data_owned()),
+      var => Err(Box::new(WITErr::new(&var, Bitpix::int()))),
     }
+  }
 
-    pub fn as_owned_i64_array(self) -> Result<Array<i64, IxDyn>, Box<dyn Error>> {
-        match self {
-            Self::I64Img(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(WITErr::new(&var, Bitpix::long())))
-        }
+  pub fn as_owned_i64_array(self) -> Result<Array<i64, IxDyn>, Box<dyn Error>> {
+    match self {
+      Self::I64Img(img) => Ok(img.get_data_owned()),
+      var => Err(Box::new(WITErr::new(&var, Bitpix::long()))),
     }
+  }
 
-    pub fn as_owned_f32_array(self) -> Result<Array<f32, IxDyn>, Box<dyn Error>> {
-        match self {
-            Self::SpfImg(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(WITErr::new(&var, Bitpix::spf())))
-        }
+  pub fn as_owned_f32_array(self) -> Result<Array<f32, IxDyn>, Box<dyn Error>> {
+    match self {
+      Self::SpfImg(img) => Ok(img.get_data_owned()),
+      var => Err(Box::new(WITErr::new(&var, Bitpix::spf()))),
     }
+  }
 
-    pub fn as_owned_f64_array(self) -> Result<Array<f64, IxDyn>, Box<dyn Error>> {
-        match self {
-            Self::DpfImg(img) => Ok(img.get_data_owned()),
-            var => Err(Box::new(WITErr::new(&var, Bitpix::dpf())))
-        }
+  pub fn as_owned_f64_array(self) -> Result<Array<f64, IxDyn>, Box<dyn Error>> {
+    match self {
+      Self::DpfImg(img) => Ok(img.get_data_owned()),
+      var => Err(Box::new(WITErr::new(&var, Bitpix::dpf()))),
     }
-
+  }
 }
