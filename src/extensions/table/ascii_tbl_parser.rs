@@ -188,29 +188,46 @@ impl AsciiTblParser{
         -> Result<(), Box<dyn Error>>
     {
         /*  Note:
-            This parser assumes that all the necessary keywords to decode a HDU
+            This parser assumes that certain necessary keywords to decode a HDU
             containing a table have already been set while encoding the header
-            of the HDU. All this method does is write the bare table to disk.
+            of the HDU. The values of other table keywords are determined by this
+            func, with the function returning their appropriate values.
+
+            Note:
+            This function takes ownership of the table, so we can do with it 
+            whatever we want without worrying about race conditions.
+
+            Note: (some definitions)
+            column WIDTH is the number of ascii characters needed to encode a
+            single entry in the column.
+            column LENGTH is the number of entries in a column.
         */
 
-        //(1) All columns must be of the same length in the FITS file. Columns
-        //that are shorter than the longest column must be extended with spaces.
-        let col_len = tbl.max_col_len();
-        let mut string_cols = tbl.destroy();
-        string_cols.iter_mut()
-            .for_each(|col| col.resize_with(col_len, || String::from(" ")));
+        /*  (1)
+            We start by getting basic info about the table: how many columns
+            does it have, what are their formats, etc...
+        */
+        let tbl_fmts = (&tbl).get_tbl_fmt(); //IN ORDER!
+        let tbl_len = (&tbl).max_col_len();
+        let mut cols: Vec<Vec<String>> = tbl.destroy(); //IN ORDER
 
         /*  (2)
-            Not just all columns, but also all rows must consist of the same
-            number of characters. Not all fields are the same size, nor are all
-            entries in a column guaranteed to be the same length. Hence we must
-                1. find the maximum character length of each column
-                2. add all the widest columns together to find the largest row,
-                   which will then be the row length of our entire encoded FITS
-                   table.
-            After we have done this, we must ensure that all entries in a column
-            start at the same index in each row.
+            All columns in a FITS table should have the same length. Therefore,
+            we need to add empty entries to each column that is smaller than the
+            longest column.
         */
+        cols.iter_mut()
+            .for_each(|col| {
+                while col.len() < tbl_len {
+                    col.push(String::from(""));
+                }
+            });
+
+        /*  (3)
+            Furthermore, all rows in a single column must take up the same width
+            in ascii characters. This means that we must extend the co
+        */
+
 
         todo!()
     }
