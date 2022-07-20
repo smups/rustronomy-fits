@@ -44,7 +44,7 @@ chrono = "0.4"
 rayon = "1"
 dyn-clone = "1"
 indexmap = "1"
-rustronomy-core = "0.1"
+rustronomy-core = "0.3"
 
 [dev-dependencies]
 dirs = "4"
