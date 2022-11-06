@@ -34,7 +34,7 @@ mod raw;
 pub mod err;
 
 //private implementations
-pub(crate) mod impls;
+pub(crate) mod intern;
 
 //public api
 mod api;
