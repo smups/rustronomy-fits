@@ -1,54 +1,108 @@
 /*
-    Copyright (C) 2022 Raúl Wolters
+  Copyright© 2022 Raúl Wolters(1)
 
-    This file is part of rustronomy-fits.
+  This file is part of rustronomy-fits.
 
-    rustronomy is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  rustronomy is free software: you can redistribute it and/or modify it under
+  the terms of the European Union Public License version 1.2 or later, as
+  published by the European Commission.
 
-    rustronomy is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  rustronomy is distributed in the hope that it will be useful, but WITHOUT ANY
+  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+  A PARTICULAR PURPOSE. See the European Union Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the EUPL in an/all official language(s) of
+  the European Union along with rustronomy.  If not, see
+  <https://ec.europa.eu/info/european-union-public-licence_en/>.
+
+  (1) Resident of the Kingdom of the Netherlands; agreement between licensor and
+  licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use std::{
-  error::Error,
-  fmt::{self, Display, Formatter},
-};
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
-pub struct InvalidFitsFileErr {
+/// This error may be thrown by a `FitsReader` when reading from a FITS file
+pub enum FitsReadErr {
   /*
-      This error may be thrown when opening a FITS file. If the FITS
-      file has invalid encoding (for whatever reason), this error will be
-      thrown.
+    This error may be thrown when opening a FITS file. If the FITS file has
+    invalid encoding (for whatever reason), this error will be thrown.
   */
-  msg: &'static str,
+  IOErr(std::io::Error), // <- Some IO error
+  FileSize(usize),       // <- file was not a multiple of BLOCK_SIZE
+  BufferSize(usize),     // <- buffer was not a multiple of BLOCK_SIZE
+  EndOfFile { file_size: usize, blocks_read: usize }, // <- tried to read more bytes
+                         // than the file contains
 }
 
-//Possible messages
-pub(crate) const FILE_BLOCK_DIV: &'static str =
-  "tried to open file with a length not equal to an integer multiple of FITS blocks";
-pub(crate) const BUF_BLOCK_DIV: &'static str =
-  "supplied buffer not an integer multiple of FITS blocks";
-pub(crate) const FILE_END: &'static str = "tried to read more FITS blocks than the file contains";
-pub(crate) const CORRUPTED: &'static str = "tried to access corrupted data";
-
-impl Error for InvalidFitsFileErr {}
-impl Display for InvalidFitsFileErr {
+impl Display for FitsReadErr {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    write!(f, "Error while accessing FITS file: {}", self.msg)
+    use FitsReadErr::*;
+    write!(f, "Error while reading from FITS file: ")?;
+    match self {
+      BufferSize(invalid_size) => {
+        write!(
+          f,
+          "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
+          crate::BLOCK_SIZE
+        )
+      }
+      FileSize(invalid_size) => {
+        write!(
+          f,
+          "file size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
+          crate::BLOCK_SIZE
+        )
+      }
+      EndOfFile { file_size, blocks_read } => {
+        write!(
+          f,
+          "tried to read {blocks_read} FITS blocks, but file is only {file_size} blocks long"
+        )
+      }
+      IOErr(err) => {
+        write!(f, "IO error: {err}")
+      }
+    }
+  }
+}
+impl std::error::Error for FitsReadErr {}
+
+impl From<std::io::Error> for FitsReadErr {
+  fn from(err: std::io::Error) -> Self {
+    Self::IOErr(err)
   }
 }
 
-impl InvalidFitsFileErr {
-  pub(crate) fn new(msg: &'static str) -> Self {
-    InvalidFitsFileErr { msg: msg }
+#[derive(Debug)]
+/// This error may be thrown by a `FitsWriter` when writing to a FITS file
+pub enum FitsWriteErr {
+  IOErr(std::io::Error), // <- some IO error
+  BufferSize(usize),     // <- buffer was not a multiple of BLOCK_SIZE
+}
+
+impl Display for FitsWriteErr {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    use FitsWriteErr::*;
+    write!(f, "Error while writing to FITS file: ")?;
+    match self {
+      BufferSize(invalid_size) => {
+        write!(
+          f,
+          "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
+          crate::BLOCK_SIZE
+        )
+      }
+      IOErr(err) => {
+        write!(f, "IO error: {err}")
+      }
+    }
+  }
+}
+impl std::error::Error for FitsWriteErr {}
+
+impl From<std::io::Error> for FitsWriteErr {
+  fn from(err: std::io::Error) -> Self {
+    Self::IOErr(err)
   }
 }
