@@ -1,23 +1,26 @@
 /*
-    Copyright (C) 2022 Raúl Wolters
+  Copyright© 2022 Raúl Wolters(1)
 
-    This file is part of rustronomy-fits.
+  This file is part of rustronomy-fits.
 
-    rustronomy is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  rustronomy is free software: you can redistribute it and/or modify it under
+  the terms of the European Union Public License version 1.2 or later, as
+  published by the European Commission.
 
-    rustronomy is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  rustronomy is distributed in the hope that it will be useful, but WITHOUT ANY
+  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+  A PARTICULAR PURPOSE. See the European Union Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the EUPL in an/all official language(s) of
+  the European Union along with rustronomy.  If not, see
+  <https://ec.europa.eu/info/european-union-public-licence_en/>.
+
+  (1) Resident of the Kingdom of the Netherlands; agreement between licensor and
+  licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-//Module structure
+//Implementation details
+/*
 mod bitpix;
 mod err;
 mod extensions;
@@ -25,22 +28,17 @@ mod fits;
 mod header;
 mod header_data_unit;
 mod raw;
+*/
+
+//errors
+pub mod err;
+
+//private implementations
+pub(crate) mod impls;
+
+//public api
+mod api;
+pub use api::*;
 
 //Constants defined by the FITS standard
 pub(crate) const BLOCK_SIZE: usize = 2880;
-
-//Public api re-exports
-pub use err::*;
-pub use extensions::Extension;
-pub use fits::Fits;
-pub use header::Header;
-pub use header_data_unit::HeaderDataUnit;
-
-//prelude (kinda pointless rn but whatev)
-pub mod prelude {
-  pub use crate::err::*;
-  pub use crate::extensions::Extension;
-  pub use crate::fits::Fits;
-  pub use crate::header::Header;
-  pub use crate::header_data_unit::HeaderDataUnit;
-}
