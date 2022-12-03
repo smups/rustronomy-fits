@@ -212,3 +212,18 @@ macro_rules! into_typed_array {
   };
 }
 into_typed_array!(U8, u8, I16, i16, I32, i32, I64, i64, F32, f32, F64, f64);
+
+////////////////////////////////////////////////////////////////////////////////
+//                                 UNIT TESTS                                 //
+////////////////////////////////////////////////////////////////////////////////
+
+#[test]
+fn test_impl_hdu_clone_meta() {
+  use rustronomy_core::universal_containers::*;
+  let exp = 1234;
+  let mut mock_meta = meta_only::MetaOnly::new();
+  mock_meta.insert_exposure_time(exp).expect("could not insert mock tag");
+
+  let hdu = Hdu::NoData(mock_meta);
+  assert_eq!(exp, hdu.clone_meta().remove_exposure_time().unwrap());
+}
