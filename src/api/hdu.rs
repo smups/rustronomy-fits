@@ -19,8 +19,8 @@
 
 //! This module contains the `Hdu` enum representing the FITS Header Data Unit
 //! (HDU) and accompanying types.
-//! 
-//! ## The `Hdu` enum 
+//!
+//! ## The `Hdu` enum
 //! The `Hdu` enum can contain either:
 //! 1. No data, only metadata (`Hdu::NoData`)
 //! 2. An array (`Hdu::Array`)
@@ -30,7 +30,7 @@
 //! The `Array` variant can be converted into a rustronomy `DataArray<T>`, where
 //! `T` corresponds to the type of the FITS image. The `Table` variant contains
 //! a rustronomy `Table`.
-//! 
+//!
 //! ## Accessing a FITS Image HDU
 //! The `Hdu::Array` variant contains another enum, called `TypedArray`. The
 //! `TypedArray` enum implements the `TryFrom<DataArray<T>>` and can thus be
@@ -43,8 +43,8 @@
 //! };
 //! let generic_array: DataArray<f64> = typed_array.try_into()?;
 //! ```
-//! 
-//! It is often more ergonomic to directly turn the `Hdu` instance into a 
+//!
+//! It is often more ergonomic to directly turn the `Hdu` instance into a
 //! `DataArray<T>` if you do not care about the metadata. For example:
 //! ```
 //! let hdu = Fits::read("some_file.fits")?.get_hdu(0)?;
@@ -77,7 +77,7 @@ impl Hdu {
     match self {
       NoData(meta) => meta.clone(),
       Table(tab) => tab.clone_metadata(),
-      Array(arr) => arr.clone_meta()
+      Array(arr) => arr.clone_meta(),
     }
   }
 }
@@ -95,7 +95,8 @@ impl Display for FromHduErr {
     match self {
       ArrayTypeErr { tried_into_type, actual_type } => {
         write!(f, "Expected DataArray<{tried_into_type}>, found DataArray<{actual_type}>")
-      } VaraintErr { correct_variant } => {
+      }
+      VaraintErr { correct_variant } => {
         write!(f, "Hdu contains invalid variant, expected to find Hdu::{correct_variant}")
       }
     }
@@ -143,8 +144,8 @@ where
     if let Hdu::Array(data) = value {
       return match data.try_into() {
         Ok(good) => Ok(good),
-        Err(err) => Err(err.into())
-      }
+        Err(err) => Err(err.into()),
+      };
     } else {
       return Err(FromHduErr::VaraintErr { correct_variant: "Array" });
     }
@@ -169,12 +170,12 @@ impl TypedArray {
   pub(crate) fn clone_meta(&self) -> meta_only::MetaOnly {
     use TypedArray::*;
     match self {
-      U8(arr)  => arr.clone_metadata(),
+      U8(arr) => arr.clone_metadata(),
       I16(arr) => arr.clone_metadata(),
       I32(arr) => arr.clone_metadata(),
       I64(arr) => arr.clone_metadata(),
       F32(arr) => arr.clone_metadata(),
-      F64(arr) => arr.clone_metadata()
+      F64(arr) => arr.clone_metadata(),
     }
   }
 }
