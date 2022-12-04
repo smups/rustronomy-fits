@@ -224,8 +224,8 @@ pub fn concat_records(
       } else {
         //Interpret this CONTINUE kw as commentary
         commentary.push_str(value.unwrap_or(""));
-        continue;
       }
+      continue;
     } else if let Some(current_string) = std::mem::take(&mut extended_string) {
       //If the last keyword was a CONTINUE keyword (extended_string != None), we
       //should push its completed value to the record list since we have now
@@ -316,6 +316,7 @@ fn record_split_test() {
   assert!(recs[0] == ("SIMPLE", Some("T"), Some("FLIGHT22 05Apr96 RSH")));
   assert!(recs[1] == ("BITPIX", Some("16"), Some("SIGNED 16-BIT INTEGERS")));
 }
+
 #[test]
 fn record_concat_test() {
   //Setup dummy data
@@ -382,6 +383,15 @@ fn orphaned_continue_test() {
 }
 
 #[test]
+fn invalid_novalue_continue_test() {
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 2] =
+    [("GARBAGE", Some("'hmm&'"), None), (CONTINUE, None, None)];
+  let mut dummy_options = FitsOptions::new_invalid();
+  println!("{:?}", concat_records(&TEST_RECS, &mut dummy_options));
+  assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
+}
+
+#[test]
 fn naxis_option_test() {
   //Setup dummy data
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 4] = [
@@ -404,7 +414,7 @@ fn simple_option_test() {
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(SIMPLE, Some("T"), None)];
   const TEST_ANSWER: bool = true;
   let mut input_options = FitsOptions::new_invalid();
-  let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
+  concat_records(&TEST_RECS, &mut input_options).unwrap();
   assert!(input_options.conforming == TEST_ANSWER);
 }
 
