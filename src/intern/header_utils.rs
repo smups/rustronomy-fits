@@ -70,16 +70,17 @@ pub fn read_header(reader: &mut FitsReader) -> Result<Vec<u8>, FitsReadErr> {
   };
 
   //consistency check before returning: assert that we got a multiple of BLOCK_SIZE
-  assert!(header_bytes.len() % crate::BLOCK_SIZE == 0, "irregularly sized FITS block found while reading -- THIS IS A BUG --");
+  assert!(
+    header_bytes.len() % crate::BLOCK_SIZE == 0,
+    "irregularly sized FITS block found while reading -- THIS IS A BUG --"
+  );
   Ok(header_bytes)
 }
 
 /// This function takes a 2880-byte FITS block and splits it into 80-byte keyword
 /// records. The records are then split into a keyword, optional value and optional
 /// comment.
-pub fn split_records<'a>(
-  fits_block: &'a[u8]
-) -> Vec<(&'a str, Option<&'a str>, Option<&'a str>)> {
+pub fn split_records<'a>(fits_block: &'a [u8]) -> Vec<(&'a str, Option<&'a str>, Option<&'a str>)> {
   //(1) assert that fits_block is actually a FITS block
   if fits_block.len() % crate::BLOCK_SIZE != 0 {
     panic!("irregularly sized FITS header found in split_records -- THIS IS A BUG --");
@@ -103,7 +104,8 @@ pub fn split_records<'a>(
       let body: &str = std::str::from_utf8(&x[10..80]).expect(UTF8_KEYERR).trim();
       if body.contains(SEP) {
         //(iia): Same as (ii) but we have a comment!
-        let (value, comment) = body.split_once(SEP).expect("FITS-KR contained \'/\' but also not? BUG!");
+        let (value, comment) =
+          body.split_once(SEP).expect("FITS-KR contained \'/\' but also not? BUG!");
         (Some(value.trim()), Some(comment.trim()))
       } else {
         //(iib): Same as (ii) but we do NOT have a comment!
@@ -115,7 +117,8 @@ pub fn split_records<'a>(
       let body: &str = std::str::from_utf8(&x[10..80]).expect(UTF8_KEYERR).trim();
       if body.contains(SEP) {
         //(iiia): String with a comment
-        let (value, comment) = body.split_once(SEP).expect("FITS-KR contained \'/\' but also not? BUG!");
+        let (value, comment) =
+          body.split_once(SEP).expect("FITS-KR contained \'/\' but also not? BUG!");
         (Some(value.trim()), Some(comment.trim()))
       } else {
         //(iiib): String without a comment
@@ -136,7 +139,10 @@ pub fn split_records<'a>(
   }
 
   //(R) we've parsed this whole block and not found an END kw -> this is a bug
-  assert!(recs.last().unwrap().0 == END, "couldn't find END kw in FITS header -- THIS IS PROBABLY A BUG --");
+  assert!(
+    recs.last().unwrap().0 == END,
+    "couldn't find END kw in FITS header -- THIS IS PROBABLY A BUG --"
+  );
   return recs;
 }
 
@@ -146,7 +152,7 @@ pub fn split_records<'a>(
 /// errors are due to invalid FITS files!
 pub enum ConcatErr {
   NoValue(&'static str),
-  NaxisOob{idx: usize, n_axes: u16},
+  NaxisOob { idx: usize, n_axes: u16 },
   FormatErr(&'static str, String),
 }
 
@@ -161,9 +167,13 @@ impl std::fmt::Display for ConcatErr {
     write!(f, "{}", Self::ERROR_START)?;
     match self {
       NoValue(kw) => write!(f, "encountered a {kw} keyword without a value."),
-      NaxisOob { idx, n_axes } => write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, n_axes),
-      FormatErr(kw, err) => write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", kw, err),
-      _ => todo!()
+      NaxisOob { idx, n_axes } => {
+        write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, n_axes)
+      }
+      FormatErr(kw, err) => {
+        write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", kw, err)
+      }
+      _ => todo!(),
     }?;
     writeln!(f, "{}", Self::ERROR_END)
   }
@@ -186,8 +196,8 @@ pub fn concat_records(
 
   for (key, value, _comment) in records {
     /*
-    * (1) Deal with CONTINUE keywords
-    */
+     * (1) Deal with CONTINUE keywords
+     */
 
     if *key == CONTINUE {
       /* -- Things to take into account when parsing CONTINUE keywords --A
@@ -225,8 +235,8 @@ pub fn concat_records(
     }
 
     /*
-    * (2) Parse the FITS-options
-    */
+     * (2) Parse the FITS-options
+     */
 
     //(a) NAXIS{n}
     if key.starts_with(NAXIS) {
@@ -239,7 +249,10 @@ pub fn concat_records(
         let n: usize = n.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
         let value: u16 = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
         //index in FITS starts with 1, rust starts with 0 so minus one to convert
-        *options.shape.get_mut(n - 1).ok_or(ConcatErr::NaxisOob { idx: n, n_axes: options.dim })? = value;
+        *options
+          .shape
+          .get_mut(n - 1)
+          .ok_or(ConcatErr::NaxisOob { idx: n, n_axes: options.dim })? = value;
       }
       continue;
     }
@@ -261,8 +274,8 @@ pub fn concat_records(
     }
 
     /*
-    * (3) Deal with commentary keywords
-    */
+     * (3) Deal with commentary keywords
+     */
     if *key == COMMENT {
       commentary.push_str(value.unwrap_or(""));
       continue;
@@ -273,11 +286,11 @@ pub fn concat_records(
     }
 
     /*
-    * (4) At this point, we're just working with a normal keyword. If it's an
-    * extended string keyword, we should set extended_keyword. If not, we simply
-    * push it to the meta list. We should also take care to ignore value-less
-    * keywords.
-    */
+     * (4) At this point, we're just working with a normal keyword. If it's an
+     * extended string keyword, we should set extended_keyword. If not, we simply
+     * push it to the meta list. We should also take care to ignore value-less
+     * keywords.
+     */
     if let Some(value) = value {
       if value.ends_with("&'") {
         //(4a) This is an extended string kw
@@ -308,14 +321,42 @@ fn record_concat_test() {
   //Setup dummy data
   const TEST_KEY: &str = "TEST";
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 8] = [
-    (TEST_KEY, Some("'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutru&'"), None),
-    (CONTINUE, Some("'m ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habita&'"), None),
-    (CONTINUE, Some("'sse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id &'"), None),
-    (CONTINUE, Some("'interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit ame&'"), None),
-    (CONTINUE, Some("'t semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ul&'"), None),
-    (CONTINUE, Some("'lamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque frin&'"), None),
-    (CONTINUE, Some("'gilla ex at scelerisque. Integer vitae tincidunt tortor.'"), Some("done with this")),
-    (END, None, None)
+    (
+      TEST_KEY,
+      Some("'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutru&'"),
+      None,
+    ),
+    (
+      CONTINUE,
+      Some("'m ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habita&'"),
+      None,
+    ),
+    (
+      CONTINUE,
+      Some("'sse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id &'"),
+      None,
+    ),
+    (
+      CONTINUE,
+      Some("'interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit ame&'"),
+      None,
+    ),
+    (
+      CONTINUE,
+      Some("'t semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ul&'"),
+      None,
+    ),
+    (
+      CONTINUE,
+      Some("'lamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque frin&'"),
+      None,
+    ),
+    (
+      CONTINUE,
+      Some("'gilla ex at scelerisque. Integer vitae tincidunt tortor.'"),
+      Some("done with this"),
+    ),
+    (END, None, None),
   ];
   const TEST_ANSWER: &str = "'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutrum ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habitasse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit amet semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ullamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque fringilla ex at scelerisque. Integer vitae tincidunt tortor.'";
   let mut dummy_options = FitsOptions::new_invalid();
@@ -330,7 +371,7 @@ fn orphaned_continue_test() {
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 3] = [
     ("TEST_GARBAGE", Some("value"), Some("comment")),
     (CONTINUE, Some(TEST_COMMENT), None),
-    (CONTINUE, None, None)
+    (CONTINUE, None, None),
   ];
   const META_ANSWER: (&str, &str) = ("TEST_GARBAGE", "value");
   let mut input_options = FitsOptions::new_invalid();
@@ -347,9 +388,9 @@ fn naxis_option_test() {
     (NAXIS, Some("3"), None),
     ("NAXIS1", Some("1000"), None),
     ("NAXIS2", Some("2250"), None),
-    ("NAXIS3", Some("272"), None)
+    ("NAXIS3", Some("272"), None),
   ];
-  const TEST_ANSWER: [u16; 3] = [1000, 2250, 272]; 
+  const TEST_ANSWER: [u16; 3] = [1000, 2250, 272];
   let mut input_options = FitsOptions::new_invalid();
   let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
   assert!(input_options.dim == input_options.shape.len() as u16);
@@ -360,10 +401,8 @@ fn naxis_option_test() {
 #[test]
 fn simple_option_test() {
   //Setup dummy data
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
-    (SIMPLE, Some("T"), None)
-  ];
-  const TEST_ANSWER: bool = true; 
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(SIMPLE, Some("T"), None)];
+  const TEST_ANSWER: bool = true;
   let mut input_options = FitsOptions::new_invalid();
   let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
   assert!(input_options.conforming == TEST_ANSWER);
@@ -372,10 +411,8 @@ fn simple_option_test() {
 #[test]
 fn bitpix_option_test() {
   //Setup dummy data
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
-    (BITPIX, Some("-32"), None)
-  ];
-  const TEST_ANSWER: i8 = -32; 
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(BITPIX, Some("-32"), None)];
+  const TEST_ANSWER: i8 = -32;
   let mut input_options = FitsOptions::new_invalid();
   let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
   assert!(input_options.bitpix == TEST_ANSWER);

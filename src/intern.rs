@@ -1,5 +1,5 @@
 //Std imports
-use std::{error::Error};
+use std::error::Error;
 
 //external imports
 use rustronomy_core::universal_containers::*;
@@ -26,13 +26,7 @@ pub struct FitsOptions {
 
 impl FitsOptions {
   pub fn new_invalid() -> Self {
-    FitsOptions {
-      conforming: false,
-      bitpix: 0,
-      extends: false,
-      dim: 0,
-      shape: Vec::new()
-    }
+    FitsOptions { conforming: false, bitpix: 0, extends: false, dim: 0, shape: Vec::new() }
   }
 }
 
