@@ -319,3 +319,15 @@ fn naxis_option_test() {
   assert!(input_options.shape.len() == TEST_ANSWER.len());
   assert!(input_options.shape == TEST_ANSWER);
 }
+
+#[test]
+fn simple_option_test() {
+  //Setup dummy data
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
+    (SIMPLE, Some("T"), None)
+  ];
+  const TEST_ANSWER: bool = true; 
+  let mut input_options = FitsOptions::new_invalid();
+  let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
+  assert!(input_options.conforming == TEST_ANSWER);
+}
