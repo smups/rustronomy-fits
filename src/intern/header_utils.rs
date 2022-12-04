@@ -266,3 +266,39 @@ fn record_split_test() {
   assert!(recs[0] == ("SIMPLE", Some("T"), Some("FLIGHT22 05Apr96 RSH")));
   assert!(recs[1] == ("BITPIX", Some("16"), Some("SIGNED 16-BIT INTEGERS")));
 }
+#[test]
+fn record_concat_test() {
+  //Setup dummy data
+  const TEST_KEY: &str = "TEST";
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 8] = [
+    (TEST_KEY, Some("'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutru&'"), None),
+    (CONTINUE, Some("'m ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habita&'"), None),
+    (CONTINUE, Some("'sse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id &'"), None),
+    (CONTINUE, Some("'interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit ame&'"), None),
+    (CONTINUE, Some("'t semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ul&'"), None),
+    (CONTINUE, Some("'lamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque frin&'"), None),
+    (CONTINUE, Some("'gilla ex at scelerisque. Integer vitae tincidunt tortor.'"), Some("done with this")),
+    (END, None, None)
+  ];
+  const TEST_ANSWER: &str = "'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutrum ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habitasse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit amet semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ullamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque fringilla ex at scelerisque. Integer vitae tincidunt tortor.'";
+  let mut dummy_options = FitsOptions::new_invalid();
+  let (meta, _comments, _history) = concat_records(&TEST_RECS, &mut dummy_options).unwrap();
+  assert!(&meta[0].0 == TEST_KEY);
+  assert!(&meta[0].1 == TEST_ANSWER);
+}
+
+#[test]
+fn orphaned_continue_test() {
+  const TEST_COMMENT: &str = "this is a comment";
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 3] = [
+    ("TEST_GARBAGE", Some("value"), Some("comment")),
+    (CONTINUE, Some(TEST_COMMENT), None),
+    (CONTINUE, None, None)
+  ];
+  const META_ANSWER: (&str, &str) = ("TEST_GARBAGE", "value");
+  let mut input_options = FitsOptions::new_invalid();
+  let (meta, comments, _) = concat_records(&TEST_RECS, &mut input_options).unwrap();
+  assert!(meta.len() == 1);
+  assert!(&meta[0].0 == META_ANSWER.0 && &meta[0].1 == META_ANSWER.1);
+  assert!(&comments == TEST_COMMENT);
+}
