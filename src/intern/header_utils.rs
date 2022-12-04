@@ -435,3 +435,12 @@ fn bitpix_option_test() {
   let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
   assert!(input_options.bitpix == TEST_ANSWER);
 }
+
+#[test]
+fn invalid_novalue_bitpix_test() {
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
+    (BITPIX, None, None)
+  ];
+  let mut dummy_options = FitsOptions::new_invalid();
+  assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
+}
