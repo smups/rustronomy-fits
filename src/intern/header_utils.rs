@@ -331,3 +331,15 @@ fn simple_option_test() {
   let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
   assert!(input_options.conforming == TEST_ANSWER);
 }
+
+#[test]
+fn bitpix_option_test() {
+  //Setup dummy data
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
+    (BITPIX, Some("-32"), None)
+  ];
+  const TEST_ANSWER: i8 = -32; 
+  let mut input_options = FitsOptions::new_invalid();
+  let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
+  assert!(input_options.bitpix == TEST_ANSWER);
+}
