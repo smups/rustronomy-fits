@@ -140,24 +140,54 @@ pub fn split_records<'a>(
   return recs;
 }
 
+#[derive(Debug, Clone)]
+/// This error type represents all the things that can go wrong when turning FITS
+/// key-value-comment triplets into rustronomy metadata and options. All of these
+/// errors are due to invalid FITS files!
+pub enum ConcatErr {
+  NoValue(&'static str),
+  NaxisOob{idx: usize, n_axes: u16},
+  FormatErr(&'static str, String),
+}
+
+impl ConcatErr {
+  const ERROR_START: &str = "[INVALID FITS FILE]: ";
+  const ERROR_END: &str = "Cannot parse this FITS file. Please make sure it is formatted properly!";
+}
+
+impl std::fmt::Display for ConcatErr {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    use ConcatErr::*;
+    write!(f, "{}", Self::ERROR_START)?;
+    match self {
+      NoValue(kw) => write!(f, "encountered a {kw} keyword without a value."),
+      NaxisOob { idx, n_axes } => write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, n_axes),
+      FormatErr(kw, err) => write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", kw, err),
+      _ => todo!()
+    }?;
+    writeln!(f, "{}", Self::ERROR_END)
+  }
+}
+impl std::error::Error for ConcatErr {}
+
 /// This function turns raw &str key-value-comment keywords into owned String
 /// records containing only key-value pairs. In addition, normal
 pub fn concat_records(
   records: &[(&str, Option<&str>, Option<&str>)],
   options: &mut FitsOptions,
-) -> Result<(Vec<(String, String)>, String, String), Box<dyn std::error::Error>> {
+) -> Result<(Vec<(String, String)>, String, String), ConcatErr> {
   //Make vec of unparsed keyword-value pairs; keep commentary and history seperate
   let mut meta: Vec<(String, String)> = Vec::new();
-
-  let mut extended_string: Option<(String, String)> = None;
   let mut commentary = String::new();
   let mut history = String::new();
+
+  //Field to keep track of extended string keywords
+  let mut extended_string: Option<(String, String)> = None;
 
   for (key, value, _comment) in records {
     /*
     * (1) Deal with CONTINUE keywords
     */
-    println!("{key}::{value:?}");
 
     if *key == CONTINUE {
       /* -- Things to take into account when parsing CONTINUE keywords --A
@@ -179,9 +209,8 @@ pub fn concat_records(
       if let Some((_, ref mut current_string)) = extended_string {
         current_string.pop(); //pop the ' character
         current_string.pop(); //pop the & character
-        let new_ext = &value.unwrap()[1..]; //everything except the leading '
-        current_string.push_str(new_ext);
-        continue;
+        let new_ext = value.ok_or(ConcatErr::NoValue(CONTINUE))?;
+        current_string.push_str(&new_ext[1..]); //don´t append leading '
       } else {
         //Interpret this CONTINUE kw as commentary
         commentary.push_str(value.unwrap_or(""));
@@ -200,26 +229,34 @@ pub fn concat_records(
     */
 
     //(a) NAXIS{n}
-    if key.contains(NAXIS) {
-      let n = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).unwrap();
+    if key.starts_with(NAXIS) {
+      let n = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
+      let value = value.ok_or(ConcatErr::NoValue(NAXIS))?;
       if n == "" {
-        options.dim = value.unwrap().parse().unwrap();
+        options.dim = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
         options.shape = vec![0; options.dim as usize];
       } else {
+        let n: usize = n.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
+        let value: u16 = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
         //index in FITS starts with 1, rust starts with 0 so minus one to convert
-        let n: usize = n.parse().unwrap();
-        options.shape[n - 1] = value.unwrap().parse().unwrap();
+        *options.shape.get_mut(n - 1).ok_or(ConcatErr::NaxisOob { idx: n, n_axes: options.dim })? = value;
       }
       continue;
     }
     //(b) simple
     if *key == SIMPLE {
-      options.conforming = value.unwrap().parse().unwrap();
+      options.conforming = value
+        .ok_or(ConcatErr::NoValue(SIMPLE))?
+        .parse()
+        .map_err(|e| ConcatErr::FormatErr(SIMPLE, format!("{e}")))?;
       continue;
     }
     //(c) bitpix
     if *key == BITPIX {
-      options.bitpix = value.unwrap().parse().unwrap();
+      options.bitpix = value
+        .ok_or(ConcatErr::NoValue(BITPIX))?
+        .parse()
+        .map_err(|e| ConcatErr::FormatErr(BITPIX, format!("{e}")))?;
       continue;
     }
 
