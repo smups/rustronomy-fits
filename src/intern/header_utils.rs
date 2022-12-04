@@ -387,7 +387,6 @@ fn invalid_novalue_continue_test() {
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 2] =
     [("GARBAGE", Some("'hmm&'"), None), (CONTINUE, None, None)];
   let mut dummy_options = FitsOptions::new_invalid();
-  println!("{:?}", concat_records(&TEST_RECS, &mut dummy_options));
   assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
 }
 
@@ -406,6 +405,15 @@ fn naxis_option_test() {
   assert!(input_options.dim == input_options.shape.len() as u16);
   assert!(input_options.shape.len() == TEST_ANSWER.len());
   assert!(input_options.shape == TEST_ANSWER);
+}
+
+#[test]
+fn invalid_novalue_simple_test() {
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
+    (SIMPLE, None, None)
+  ];
+  let mut dummy_options = FitsOptions::new_invalid();
+  assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
 }
 
 #[test]
