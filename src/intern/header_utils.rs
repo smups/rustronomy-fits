@@ -19,6 +19,8 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
+use rustronomy_core::universal_containers::MetaDataContainer;
+
 use crate::err::io_err::FitsReadErr;
 
 use super::{FitsOptions, FitsReader};
@@ -90,7 +92,6 @@ pub fn split_records<'a>(
   for x in fits_block.chunks_exact(crate::RECORD_SIZE) {
     //Key is in the first 8 bytes (trim spaces!)
     let key: &str = std::str::from_utf8(&x[0..8]).expect(UTF8_KEYERR).trim();
-
     let (value, comment) = if key == COMMENT || key == HISTORY {
       //(i): The comment and history keywords are special because they do NOT
       //use the normal value syntax and instead only contain text, including in
@@ -129,7 +130,7 @@ pub fn split_records<'a>(
     recs.push((key, value, comment));
 
     if key == END {
-      //we have reached the end of the header -> return true
+      //we have reached the end of the header
       return recs;
     }
   }
@@ -139,14 +140,63 @@ pub fn split_records<'a>(
   return recs;
 }
 
-pub fn parse_records(
+/// This function turns raw &str key-value-comment keywords into owned String
+/// records containing only key-value pairs. In addition, normal
+pub fn concat_records(
   records: &[(&str, Option<&str>, Option<&str>)],
-  meta: &mut Vec<(String, String)>,
   options: &mut FitsOptions,
-) -> Result<(), Box<dyn std::error::Error>> {
-  for (key, value, comment) in records {
+) -> Result<(Vec<(String, String)>, String, String), Box<dyn std::error::Error>> {
+  //Make vec of unparsed keyword-value pairs; keep commentary and history seperate
+  let mut meta: Vec<(String, String)> = Vec::new();
+
+  let mut extended_string: Option<(String, String)> = None;
+  let mut commentary = String::new();
+  let mut history = String::new();
+
+  for (key, value, _comment) in records {
     /*
-     * (1) Check if we have a FITS option
+    * (1) Deal with CONTINUE keywords
+    */
+    println!("{key}::{value:?}");
+
+    if *key == CONTINUE {
+      /* -- Things to take into account when parsing CONTINUE keywords --A
+        The last two characters of the current extended string value MUST be
+        _&'_ and the first character of the new extension MUST be _'_. We won't
+        check this, since it doesn't really break the header anyway. Instead, I'll
+        just remove the last two characters from the extended string and append
+        all characters from the new extension except the first.
+
+        Sometimes extended string values are used to store a long comment and no
+        actual string data at all. They should still follow the same formatting
+        rules, so an empty comment string might look like '&'/comment. (no special
+        handling is required in this case)
+
+        CONTINUE keywords are only valid after other CONTINUE keywords, or after
+        a string-valued keyword. Orphaned CONTINUE keywords should be interpreted
+        as COMMENT keywords as per the FITS standard.
+      */
+      if let Some((_, ref mut current_string)) = extended_string {
+        current_string.pop(); //pop the ' character
+        current_string.pop(); //pop the & character
+        let new_ext = &value.unwrap()[1..]; //everything except the leading '
+        current_string.push_str(new_ext);
+        continue;
+      } else {
+        //Interpret this CONTINUE kw as commentary
+        commentary.push_str(value.unwrap_or(""));
+        continue;
+      }
+    } else if let Some(current_string) = std::mem::take(&mut extended_string) {
+      //If the last keyword was a CONTINUE keyword (extended_string != None), we
+      //should push its completed value to the record list since we have now
+      //encountered a non-CONTINUE keyword. We should also reset the value of
+      //extended_string to None.
+      meta.push(current_string);
+    }
+
+    /*
+    * (2) Parse the FITS-options
     */
 
     //(a) NAXIS{n}
@@ -156,8 +206,9 @@ pub fn parse_records(
         options.dim = value.unwrap().parse().unwrap();
         options.shape = vec![0; options.dim as usize];
       } else {
+        //index in FITS starts with 1, rust starts with 0 so minus one to convert
         let n: usize = n.parse().unwrap();
-        options.shape[n] = value.unwrap().parse().unwrap();
+        options.shape[n - 1] = value.unwrap().parse().unwrap();
       }
       continue;
     }
@@ -173,26 +224,35 @@ pub fn parse_records(
     }
 
     /*
-     * (2) Deal with CONTINUE keywords
-     */
-    if *key == CONTINUE {
-      let last_idx = meta.len();
-      meta.get_mut(last_idx).unwrap().1.extend(unsafe {
-        let bytes = value.unwrap().as_bytes();
-        std::str::from_utf8_unchecked(&bytes[0..bytes.len()]).chars()
-      });
+    * (3) Deal with commentary keywords
+    */
+    if *key == COMMENT {
+      commentary.push_str(value.unwrap_or(""));
+      continue;
+    }
+    if *key == HISTORY {
+      history.push_str(value.unwrap_or(""));
       continue;
     }
 
     /*
-     * (3) In all other cases we just add the key-value pair to the vec (unless
-     * the value is None, in which case we ignore the key)
-     */
+    * (4) At this point, we're just working with a normal keyword. If it's an
+    * extended string keyword, we should set extended_keyword. If not, we simply
+    * push it to the meta list. We should also take care to ignore value-less
+    * keywords.
+    */
     if let Some(value) = value {
-      meta.push((key.to_string(), value.to_string()))
+      if value.ends_with("&'") {
+        //(4a) This is an extended string kw
+        extended_string = Some((key.to_string(), value.to_string()));
+      } else {
+        //(4b) This is not an extended string kw -> push it
+        meta.push((key.to_string(), value.to_string()))
+      }
     };
   }
-  Ok(())
+  //(R) the meta vec
+  Ok((meta, commentary, history))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -200,7 +260,7 @@ pub fn parse_records(
 ////////////////////////////////////////////////////////////////////////////////
 
 #[test]
-fn record_decode_test() {
+fn record_split_test() {
   const TEST_BLOCK: &str = "SIMPLE  =                    T  / FLIGHT22 05Apr96 RSH                          BITPIX  =                   16  / SIGNED 16-BIT INTEGERS                        NAXIS   =                    2  / 2-DIMENSIONAL IMAGES                          NAXIS1  =                  512  / SAMPLES PER LINE                              NAXIS2  =                  512  / LINES PER IMAGE                               EXTEND  =                    T  / FILE MAY HAVE EXTENSIONS                      DATATYPE= 'INTEGER*2'           / SAME INFORMATION AS BITPIX                    TELESCOP= 'UIT     '            / TELECOPE USED                                 INSTRUME= 'INTENSIFIED-FILM'    / DETECTOR USED                                 OBJECT  = 'NGC4151 '            / TARGET NAME                                   OBJECT2 = '_       '            / ALTERNATIVE TARGET NAME                       CATEGORY= 'FLIGHT  '            / TARGET CATEGORY                               JOTFID  = '8116-14 '            / ASTRO MISSION TARGET ID                       IMAGE   = 'FUV2582 '            / IMAGE NUMBER                                  ORIGIN  = 'UIT/GSFC'            / WHERE TAPE WRITTEN                            ASTRO   =                    2  / ASTRO MISSION NUMBER                          FRAMENO = 'b0582   '            / ANNOTATED FRAME NUMBER                        CATHODE = 'CSI     '            / IMAGE TUBE PHOTOCATHODE                       FILTER  = 'B1      '            / CAMERA/FILTER IDENTIFIER                      PDSDATIM= '06-JUL-1995  07:20'  / MICRODENSITOMETRY DATE & TIME                 PDSID   =                   21  / MICRODENSITOMETER IDENT                       PDSAPERT=                   20  / MICROD. APERTURE, MICRONS                     PDSSTEP =                   10  / MICROD. STEP SIZE, MICRONS                    PIXELSIZ=        8.0000000E+01  / CURRENT PIXEL SIZE, MICRONS                   EQUINOX =        2.0000000E+03  / EQUINOX OF BEST COORDINATES                   NOMRA   =             182.0044  / 1950 I.P.S.  R.A., DEGREES                    NOMDEC  =              39.6839  / 1950 I.P.S.  DEC., DEGREES                    NOMROLL =             323.9500  / I.P.S. ROLL ANGLE                             NOMSCALE=        5.6832500E+01  / NOMINAL PLATE SCL (ARCSEC/MM)                 CALIBCON=          5.00000E-16  / PREFLIGHT LAB CALIB FOR CAMERA                FEXPTIME= '8355    '            / EXPOSURE TIME, APPLICABLE FRM                 DATE-OBS= '13/03/95'            / DATE OF OBSERVATION (GMT)                     TIME-OBS=        6.2728000E+00  / TIME OF OBS (HOURS GMT)                       BSCALE  =        2.0587209E-16  / CALIBRATION CONST                             BUNIT   = 'ERGS/CM**2/S/ANGSTRM'                                                END     =              0.00000  / ADDITIVE CONST FOR CALIB.                     ";
   let recs = split_records(TEST_BLOCK.as_bytes());
   assert!(recs[0] == ("SIMPLE", Some("T"), Some("FLIGHT22 05Apr96 RSH")));
