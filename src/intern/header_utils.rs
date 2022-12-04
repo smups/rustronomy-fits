@@ -302,3 +302,20 @@ fn orphaned_continue_test() {
   assert!(&meta[0].0 == META_ANSWER.0 && &meta[0].1 == META_ANSWER.1);
   assert!(&comments == TEST_COMMENT);
 }
+
+#[test]
+fn naxis_option_test() {
+  //Setup dummy data
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 4] = [
+    (NAXIS, Some("3"), None),
+    ("NAXIS1", Some("1000"), None),
+    ("NAXIS2", Some("2250"), None),
+    ("NAXIS3", Some("272"), None)
+  ];
+  const TEST_ANSWER: [u16; 3] = [1000, 2250, 272]; 
+  let mut input_options = FitsOptions::new_invalid();
+  let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
+  assert!(input_options.dim == input_options.shape.len() as u16);
+  assert!(input_options.shape.len() == TEST_ANSWER.len());
+  assert!(input_options.shape == TEST_ANSWER);
+}
