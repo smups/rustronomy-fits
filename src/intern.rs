@@ -60,9 +60,6 @@ pub fn read_primary_hdu(
 
   //(1) Read all the raw bytes in the header
   let header_bytes = read_header(reader)?;
-
-  //(2) Split the raw bytes into FITS keyword-records. These 80-byte chunks
-  //  consist of a key, an optional value and an optional comment.
-  let raw_records = split_records(&header_bytes);
+  
   todo!()
 }
