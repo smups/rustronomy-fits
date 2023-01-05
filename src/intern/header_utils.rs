@@ -21,23 +21,21 @@
 
 use rustronomy_core::universal_containers::MetaDataContainer;
 
-use crate::err::io_err::FitsReadErr;
+use crate::{err::io_err::FitsReadErr, fits::Fits};
 
 use super::{FitsOptions, FitsReader};
 
 //Comment separator
 const SEP: char = '/';
 
-//Mandatory keywords
-pub const SIMPLE: &str = "SIMPLE";
-pub const BITPIX: &str = "BITPIX";
-pub const NAXIS: &str = "NAXIS";
-pub const END: &str = "END";
-
-//Special keywords
-pub const CONTINUE: &str = "CONTINUE";
-pub const COMMENT: &str = "COMMENT";
-pub const HISTORY: &str = "HISTORY";
+//Keywords that correspond to FITS options
+const SIMPLE: &str = "SIMPLE";
+const BITPIX: &str = "BITPIX";
+const NAXIS: &str = "NAXIS";
+const END: &str = "END";
+const CONTINUE: &str = "CONTINUE";
+const COMMENT: &str = "COMMENT";
+const HISTORY: &str = "HISTORY";
 
 //Error messages
 const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encoding";
@@ -77,9 +75,71 @@ pub fn read_header(reader: &mut FitsReader) -> Result<Vec<u8>, FitsReadErr> {
   Ok(header_bytes)
 }
 
-/// This function takes a 2880-byte FITS block and splits it into 80-byte keyword
-/// records. The records are then split into a keyword, optional value and optional
-/// comment.
+pub fn parse_records(
+  fits_block: &[u8],
+  metadata: &mut impl MetaDataContainer,
+) -> Result<FitsOptions, ConcatErr> {
+  //Make new instance of FitsOptions
+  let mut options = FitsOptions::new_invalid();
+
+  //(1) Split giant header byte blob into 80-byte key-value-comment bits
+  let kvc_iter = fits_block
+    .chunks_exact(crate::RECORD_SIZE)
+    .map(|chunk| parse_keyword_record(chunk));
+  
+  
+  for (key, value, comment) in kvc_iter {
+
+  }
+
+  todo!()
+}
+
+/// This function takes a 80-byte FITS keyword-record and splits it into a
+/// keyword, optional value and optional comment.
+fn parse_keyword_record(chunk: &[u8]) -> (&str, Option<&str>, Option<&str>) {
+  //Key is in the first 8 bytes (trim spaces!)
+  let key: &str = std::str::from_utf8(&chunk[0..8]).expect(UTF8_KEYERR).trim();
+  let (value, comment) = if key == COMMENT || key == HISTORY {
+    //(1): The comment and history keywords are special because they do NOT
+    //use the normal value syntax and instead only contain text, including in
+    //bytes 9 & 10 which usually contain the value indicator
+    (None, Some(std::str::from_utf8(&chunk[8..80]).expect(UTF8_RECERR).trim()))
+  } else if &chunk[8..10] == "= ".as_bytes() {
+    //(2): There is a value associated with this keyword, and possibly a comment.
+    //In the second case, The comment follows the '/' character.
+    let body: &str = std::str::from_utf8(&chunk[10..80]).expect(UTF8_KEYERR).trim();
+    if body.contains(SEP) {
+      //(2a): Same as (2) but we have a comment!
+      let (value, comment) =
+        body.split_once(SEP).expect("FITS-KR contained \'/\' but also not? BUG!");
+      (Some(value.trim()), Some(comment.trim()))
+    } else {
+      //(2b): Same as (2) but we do NOT have a comment!
+      (Some(body), None)
+    }
+  } else if key == CONTINUE {
+    //(3): Yet another special keyword. Does not contain '= ' in bytes 9 & 10
+    // but COULD include both a value AND a comment
+    let body: &str = std::str::from_utf8(&chunk[10..80]).expect(UTF8_KEYERR).trim();
+    if body.contains(SEP) {
+      //(3a): String with a comment
+      let (value, comment) =
+        body.split_once(SEP).expect("FITS-KR contained \'/\' but also not? BUG!");
+      (Some(value.trim()), Some(comment.trim()))
+    } else {
+      //(3b): String without a comment
+      (Some(body), None)
+    }
+  } else {
+    //(4): this is an uninitialized or BLANK keyword
+    (None, None)
+  };
+  //(R) (key, value, comment)
+  return (key, value, comment);
+}
+
+
 pub fn split_records<'a>(fits_block: &'a [u8]) -> Vec<(&'a str, Option<&'a str>, Option<&'a str>)> {
   //(1) assert that fits_block is actually a FITS block
   if fits_block.len() % crate::BLOCK_SIZE != 0 {
@@ -173,7 +233,6 @@ impl std::fmt::Display for ConcatErr {
       FormatErr(kw, err) => {
         write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", kw, err)
       }
-      _ => todo!(),
     }?;
     writeln!(f, "{}", Self::ERROR_END)
   }
@@ -198,7 +257,6 @@ pub fn concat_records(
     /*
      * (1) Deal with CONTINUE keywords
      */
-
     if *key == CONTINUE {
       /* -- Things to take into account when parsing CONTINUE keywords --A
         The last two characters of the current extended string value MUST be
@@ -258,9 +316,8 @@ pub fn concat_records(
     }
     //(b) simple
     if *key == SIMPLE {
-      options.conforming = value
-        .ok_or(ConcatErr::NoValue(SIMPLE))?
-        .parse()
+      let conforming = value.ok_or(ConcatErr::NoValue(SIMPLE))?;
+      options.conforming = super::keyword_utils::parse_fits_bool(conforming)
         .map_err(|e| ConcatErr::FormatErr(SIMPLE, format!("{e}")))?;
       continue;
     }
@@ -409,9 +466,7 @@ fn naxis_option_test() {
 
 #[test]
 fn invalid_novalue_simple_test() {
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
-    (SIMPLE, None, None)
-  ];
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(SIMPLE, None, None)];
   let mut dummy_options = FitsOptions::new_invalid();
   assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
 }
@@ -438,9 +493,7 @@ fn bitpix_option_test() {
 
 #[test]
 fn invalid_novalue_bitpix_test() {
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [
-    (BITPIX, None, None)
-  ];
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(BITPIX, None, None)];
   let mut dummy_options = FitsOptions::new_invalid();
   assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
 }
