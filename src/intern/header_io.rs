@@ -19,9 +19,12 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use rustronomy_core::universal_containers::MetaDataContainer;
+use std::{str::FromStr, error::Error};
 
-use crate::{err::io_err::FitsReadErr, fits::Fits};
+use chrono::{DateTime, Utc};
+use rustronomy_core::universal_containers::{MetaDataContainer, metadata::TagError};
+
+use crate::{err::io_err::FitsReadErr};
 
 use super::{FitsOptions, FitsReader};
 
@@ -36,14 +39,40 @@ const END: &str = "END";
 const CONTINUE: &str = "CONTINUE";
 const COMMENT: &str = "COMMENT";
 const HISTORY: &str = "HISTORY";
+const BLANK: &str = "BLANK";
+
+//FITS keywords that correspond to "protected" rustronomy keywords
+const DATE: &str = "DATE";
+const DATE_OBS: &str = "DATE-OBS";
+const AUTHOR: &str = "AUTHOR";
+const REFERENC: &str = "REFERENC";
+const TELESCOP: &str = "TELESCOP";
+const INSTRUME: &str = "INSTRUME";
+const OBJECT: &str = "OBJECT";
 
 //Error messages
 const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encoding";
 const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encoding";
 
+pub fn read_header(reader: &mut FitsReader) -> Result<(FitsOptions, impl MetaDataContainer), Box<dyn Error>> {
+  //(1) Start with reading the raw bytes from storage
+  let bytes = read_header_blocks(reader)?;
+
+  //(2) Split the raw bytes into Key-Value-Comment triplets
+  let kvc = bytes.chunks_exact(crate::RECORD_SIZE).map(|x| parse_keyword_record(x));
+
+  //(3) Concatenate the Key-Value-Comment triplets into coherent data
+  // -> store this in a metacontainer
+  let mut meta = rustronomy_core::universal_containers::meta_only::MetaOnly::new();
+  let options = concat(kvc, &mut meta)?;
+
+  //(R) return metadata and options
+  Ok((options, meta))
+}
+
 /// Reads FITS blocks from the reader until encountering the END keyword or until
 /// an error occurs. All blocks are appended to a single buffer.
-pub fn read_header(reader: &mut FitsReader) -> Result<Vec<u8>, FitsReadErr> {
+fn read_header_blocks(reader: &mut FitsReader) -> Result<Vec<u8>, FitsReadErr> {
   //container to collect into
   let mut header_bytes = Vec::with_capacity(crate::BLOCK_SIZE);
 
@@ -73,26 +102,6 @@ pub fn read_header(reader: &mut FitsReader) -> Result<Vec<u8>, FitsReadErr> {
     "irregularly sized FITS block found while reading -- THIS IS A BUG --"
   );
   Ok(header_bytes)
-}
-
-pub fn parse_records(
-  fits_block: &[u8],
-  metadata: &mut impl MetaDataContainer,
-) -> Result<FitsOptions, ConcatErr> {
-  //Make new instance of FitsOptions
-  let mut options = FitsOptions::new_invalid();
-
-  //(1) Split giant header byte blob into 80-byte key-value-comment bits
-  let kvc_iter = fits_block
-    .chunks_exact(crate::RECORD_SIZE)
-    .map(|chunk| parse_keyword_record(chunk));
-  
-  
-  for (key, value, comment) in kvc_iter {
-
-  }
-
-  todo!()
 }
 
 /// This function takes a 80-byte FITS keyword-record and splits it into a
@@ -147,6 +156,7 @@ pub enum ConcatErr {
   NoValue(&'static str),
   NaxisOob { idx: usize, n_axes: u16 },
   FormatErr(&'static str, String),
+  RestrictedKw(&'static str)
 }
 
 impl ConcatErr {
@@ -166,31 +176,48 @@ impl std::fmt::Display for ConcatErr {
       FormatErr(kw, err) => {
         write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", kw, err)
       }
+      RestrictedKw(kw) => write!(f, "tried to insert restricted keyword \"{}\"", kw)
     }?;
     writeln!(f, "{}", Self::ERROR_END)
   }
 }
 impl std::error::Error for ConcatErr {}
 
-/// This function turns raw &str key-value-comment keywords into owned String
-/// records containing only key-value pairs. In addition, normal
-pub fn concat_records(
-  records: &[(&str, Option<&str>, Option<&str>)],
-  options: &mut FitsOptions,
-) -> Result<(Vec<(String, String)>, String, String), ConcatErr> {
-  //Make vec of unparsed keyword-value pairs; keep commentary and history seperate
-  let mut meta: Vec<(String, String)> = Vec::new();
+impl From<chrono::ParseError> for ConcatErr {
+  fn from(value: <DateTime<Utc> as FromStr>::Err) -> Self {
+    Self::FormatErr("Date-like", value.to_string())
+  }
+}
+
+impl From<TagError> for ConcatErr {
+  fn from(err: TagError) -> Self {
+    use TagError::*;
+    use ConcatErr::*;
+    match err {
+      TagParseError(msg) => FormatErr("unknown", msg),
+      RestrictedTagError(tag) => RestrictedKw("unknown"),
+      other => FormatErr("unkown", other.to_string())
+    }
+  }
+}
+
+fn concat<'a>(
+  kvc: impl Iterator<Item = (&'a str, Option<&'a str>, Option<&'a str>)> + 'a,
+  metadata: &mut impl MetaDataContainer,
+) -> Result<FitsOptions, ConcatErr> {
+  //Make vec of unparsed keyword-value pairs; keep commentary and history separate
+  let mut options = FitsOptions::new_invalid();
   let mut commentary = String::new();
   let mut history = String::new();
 
   //Field to keep track of extended string keywords
   let mut extended_string: Option<(String, String)> = None;
 
-  for (key, value, _comment) in records {
+  for (key, value, _comment) in kvc {
     /*
      * (1) Deal with CONTINUE keywords
      */
-    if *key == CONTINUE {
+    if key == CONTINUE {
       /* -- Things to take into account when parsing CONTINUE keywords --A
         The last two characters of the current extended string value MUST be
         _&'_ and the first character of the new extension MUST be _'_. We won't
@@ -221,56 +248,38 @@ pub fn concat_records(
       //If the last keyword was a CONTINUE keyword (extended_string != None), we
       //should push its completed value to the record list since we have now
       //encountered a non-CONTINUE keyword. We should also reset the value of
-      //extended_string to None.
-      meta.push(current_string);
+      //extended_string to None (the mem::take fn does this).
+      insert_meta_tag(key, &current_string.0, Some(&current_string.1), metadata)?;
+      continue;
     }
 
     /*
      * (2) Parse the FITS-options
      */
-
-    //(a) NAXIS{n}
     if key.starts_with(NAXIS) {
-      let n = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
-      let value = value.ok_or(ConcatErr::NoValue(NAXIS))?;
-      if n == "" {
-        options.dim = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
-        options.shape = vec![0; options.dim as usize];
-      } else {
-        let n: usize = n.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
-        let value: u16 = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
-        //index in FITS starts with 1, rust starts with 0 so minus one to convert
-        *options
-          .shape
-          .get_mut(n - 1)
-          .ok_or(ConcatErr::NaxisOob { idx: n, n_axes: options.dim })? = value;
-      }
+      //(a) NAXIS{n}
+      parse_naxis(key, value, &mut options)?;
       continue;
     }
-    //(b) simple
-    if *key == SIMPLE {
-      let conforming = value.ok_or(ConcatErr::NoValue(SIMPLE))?;
-      options.conforming = super::keyword_utils::parse_fits_bool(conforming)
-        .map_err(|e| ConcatErr::FormatErr(SIMPLE, format!("{e}")))?;
+    if key == SIMPLE {
+      //(b) SIMPLE
+      parse_simple(key, value, &mut options)?;
       continue;
     }
-    //(c) bitpix
-    if *key == BITPIX {
-      options.bitpix = value
-        .ok_or(ConcatErr::NoValue(BITPIX))?
-        .parse()
-        .map_err(|e| ConcatErr::FormatErr(BITPIX, format!("{e}")))?;
+    if key == BITPIX {
+      //(c) BITPIX
+      parse_bitpix(key, value, &mut options)?;
       continue;
     }
 
     /*
      * (3) Deal with commentary keywords
      */
-    if *key == COMMENT {
+    if key == COMMENT {
       commentary.push_str(value.unwrap_or(""));
       continue;
     }
-    if *key == HISTORY {
+    if key == HISTORY {
       history.push_str(value.unwrap_or(""));
       continue;
     }
@@ -287,12 +296,83 @@ pub fn concat_records(
         extended_string = Some((key.to_string(), value.to_string()));
       } else {
         //(4b) This is not an extended string kw -> push it
-        meta.push((key.to_string(), value.to_string()))
+        metadata.insert_generic_tag(key, value.to_string())?;
       }
     };
   }
+
+  //(3) Push the history and commentary kw's
+  metadata
+    .insert_generic_tag("HISTORY", history)
+    .expect("error on non-restricted key. This is a BUG");
+  metadata
+    .insert_generic_tag("COMMENT", commentary)
+    .expect("error on non-restricted key. This is a BUG");
+
   //(R) the meta vec
-  Ok((meta, commentary, history))
+  Ok((options))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//////////////////////////// CONCAT HELPER FUNCTIONS ///////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+/// Helper function that parses NAXIS type keywords
+fn parse_naxis(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), ConcatErr> {
+  let n = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
+  let value = value.ok_or(ConcatErr::NoValue(NAXIS))?;
+  if n == "" {
+    options.dim = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
+    options.shape = vec![0; options.dim as usize];
+  } else {
+    let n: usize = n.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
+    let value: u16 = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
+    //index in FITS starts with 1, rust starts with 0 so minus one to convert
+    *options.shape.get_mut(n - 1).ok_or(ConcatErr::NaxisOob { idx: n, n_axes: options.dim })? =
+      value;
+  }
+  Ok(())
+}
+
+fn parse_simple(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), ConcatErr> {
+  let conforming = value.ok_or(ConcatErr::NoValue(SIMPLE))?;
+  options.conforming = super::keyword_utils::parse_fits_bool(conforming)
+    .map_err(|e| ConcatErr::FormatErr(SIMPLE, format!("{e}")))?;
+  Ok(())
+}
+
+fn parse_bitpix(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), ConcatErr> {
+  options.bitpix = value
+    .ok_or(ConcatErr::NoValue(BITPIX))?
+    .parse()
+    .map_err(|e| ConcatErr::FormatErr(BITPIX, format!("{e}")))?;
+  Ok(())
+}
+
+fn insert_meta_tag(
+  key: &str,
+  value: &str,
+  comment: Option<&str>,
+  metadata: &mut impl MetaDataContainer,
+) -> Result<(), ConcatErr> {
+  let result = match key {
+    //Reserved kw describing observations
+    DATE_OBS => { metadata.insert_date(value.parse()?); },
+    DATE => { metadata.insert_last_modified(value.parse()?); },
+    AUTHOR => { metadata.insert_author(value.to_string()); },
+    REFERENC => { metadata.insert_reference(value.to_string()); },
+    TELESCOP => { metadata.insert_telescope(value.to_string()); },
+    INSTRUME => { metadata.insert_instrument(value.to_string()); },
+    OBJECT => { metadata.insert_object(value.to_string()); },
+    BLANK => (), //do nothing
+    other => {
+      //Non restricted key!
+      metadata
+        .insert_generic_tag(key, value.to_string())
+        .expect("error on non-restricted key. This is a BUG");
+    }
+  };
+  Ok(())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -354,10 +434,7 @@ fn record_concat_test() {
     (END, None, None),
   ];
   const TEST_ANSWER: &str = "'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutrum ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habitasse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit amet semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ullamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque fringilla ex at scelerisque. Integer vitae tincidunt tortor.'";
-  let mut dummy_options = FitsOptions::new_invalid();
-  let (meta, _comments, _history) = concat_records(&TEST_RECS, &mut dummy_options).unwrap();
-  assert!(&meta[0].0 == TEST_KEY);
-  assert!(&meta[0].1 == TEST_ANSWER);
+  todo!()
 }
 
 #[test]

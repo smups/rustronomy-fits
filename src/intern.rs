@@ -27,11 +27,12 @@ use rustronomy_core::universal_containers::*;
 
 //internal imports
 use crate::api::hdu::Hdu;
-use header_utils::*;
+use header_io::*;
 
 //module structure
 mod fits_io;
-mod header_utils;
+mod hdu_io;
+mod header_io;
 mod keyword_utils;
 
 //re-exports
@@ -60,6 +61,6 @@ pub fn read_primary_hdu(
 
   //(1) Read all the raw bytes in the header
   let header_bytes = read_header(reader)?;
-  
+
   todo!()
 }
