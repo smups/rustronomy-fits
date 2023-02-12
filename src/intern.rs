@@ -30,13 +30,14 @@ use crate::api::hdu::Hdu;
 use header_io::*;
 
 //module structure
-mod fits_io;
+mod file_io;
 mod hdu_io;
 mod header_io;
 mod keyword_utils;
 
 //re-exports
-pub use fits_io::*;
+pub use file_io::*;
+pub use hdu_io::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FitsOptions {
@@ -51,16 +52,4 @@ impl FitsOptions {
   pub fn new_invalid() -> Self {
     FitsOptions { conforming: false, bitpix: 0, extends: false, dim: 0, shape: Vec::new() }
   }
-}
-
-pub fn read_primary_hdu(
-  reader: &mut FitsReader,
-) -> Result<(meta_only::MetaOnly, Hdu), Box<dyn Error>> {
-  //Max. number of records in a FITS block
-  const MAX_RECS: usize = crate::BLOCK_SIZE / crate::RECORD_SIZE;
-
-  //(1) Read all the raw bytes in the header
-  let header_bytes = read_header(reader)?;
-
-  todo!()
 }

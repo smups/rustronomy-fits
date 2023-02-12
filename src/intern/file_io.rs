@@ -21,24 +21,24 @@
 
 use std::{
   fs::{self, File},
-  io::{self, Read, Write},
+  io::{Read, Write},
   path::Path,
 };
 
-use crate::err::io_err::*;
+use crate::{err::io_err::*, api::io::*};
 
 //Get block size from root
 const BLOCK_SIZE: usize = crate::BLOCK_SIZE;
 
 #[derive(Debug)]
-pub struct FitsReader {
+pub struct FitsFileReader {
   pub file_meta: fs::Metadata,
   block_index: usize,
   n_fits_blocks: usize,
   reader_handle: File,
 }
 
-impl FitsReader {
+impl FitsFileReader {
   /// Creates a new `FitsReader` that will read bytes from the specified path.
   /// Returns an error if the provided path is not a file, or if the provided
   /// path does not exist.
@@ -63,19 +63,12 @@ impl FitsReader {
     let n_fits_blocks = file_size / BLOCK_SIZE;
 
     //Return file as raw FITS
-    Ok(FitsReader { file_meta, block_index: 0, n_fits_blocks, reader_handle })
+    Ok(FitsFileReader { file_meta, block_index: 0, n_fits_blocks, reader_handle })
   }
+}
 
-  /// Fills the provided buffer with data from the underlying FITS file. FITS
-  /// files may only be read in multiples of 2880 bytes, so this function will
-  /// return an error if the provided buffer length is not a multiple of 2880.
-  ///
-  /// # Returns
-  /// Returns number of FITS blocks that were read, or a `FitsReadErr`
-  ///
-  /// # Panics
-  /// Does not panic
-  pub fn read_blocks_into(&mut self, buffer: &mut [u8]) -> Result<usize, FitsReadErr> {
+impl FitsReader for FitsFileReader {
+  fn read_blocks_into(&mut self, buffer: &mut [u8]) -> Result<usize, FitsReadErr> {
     //(1) Calculate how many header blocks we have to read
     let n_blocks = buffer.len() / BLOCK_SIZE;
 
@@ -102,34 +95,16 @@ impl FitsReader {
     //(R) return the number of blocks read
     Ok(n_blocks)
   }
-
-  /// Creates and fills a buffer with length `n_blocks*BLOCK_SIZE`.
-  ///
-  /// # Returns
-  /// Returns vec filled with data from fits file, or a `FitsReadErr`
-  ///  
-  /// # Panics
-  /// Does not panic
-  pub fn read_blocks(&mut self, n_blocks: usize) -> Result<Vec<u8>, FitsReadErr> {
-    //(1) Create buffer
-    let mut buf = Vec::<u8>::with_capacity(n_blocks * crate::BLOCK_SIZE);
-
-    //(2) Read to buffer
-    self.read_blocks_into(&mut buf)?;
-
-    //(R) return the filled buffer
-    Ok(buf)
-  }
 }
 
 #[derive(Debug)]
-pub struct FitsWriter {
+pub struct FitsFileWriter {
   pub file_meta: std::fs::Metadata,
   block_index: usize,
   writer_handle: File,
 }
 
-impl FitsWriter {
+impl FitsFileWriter {
   /// Creates a new file to write FITS data to at the provided path. If a file
   /// with the same name already exists, it will be overwritten. If the provided
   /// path does not exist, this function will error.
@@ -147,9 +122,11 @@ impl FitsWriter {
     let file_meta = writer_handle.metadata()?;
 
     //(R)
-    Ok(FitsWriter { file_meta, block_index: 0, writer_handle })
+    Ok(FitsFileWriter { file_meta, block_index: 0, writer_handle })
   }
+}
 
+impl FitsWriter for FitsFileWriter {
   /// Writes data from buffer into FITS file. Returns an error if buffer size is
   /// not a multiple of FITS block size.
   ///
@@ -158,7 +135,7 @@ impl FitsWriter {
   ///
   /// # Panics
   /// Does not panic
-  pub fn write_blocks_from(&mut self, buffer: &[u8]) -> Result<usize, FitsWriteErr> {
+  fn write_blocks_from(&mut self, buffer: &[u8]) -> Result<usize, FitsWriteErr> {
     //(1) Check if the buffer is an integer multiple of BLOCK_LEN
     if buffer.len() % BLOCK_SIZE != 0 {
       return Err(FitsWriteErr::BufferSize(buffer.len()));
@@ -177,34 +154,7 @@ impl FitsWriter {
     Ok(blocks_written)
   }
 
-  /// Writes data from buffer into FITS file. If buffer length is not a multiple
-  /// of FITS block size, it will be padded with zeroes.
-  ///
-  /// # Returns
-  /// Returns number of FITS blocks written to disk
-  ///
-  /// # Panics
-  /// Does not panic
-  pub fn write_blocks_zeroed(&mut self, buffer: &[u8]) -> Result<usize, FitsWriteErr> {
-    //(1) Get number of full blocks and spare bytes
-    let n_full_blocks = buffer.len() / BLOCK_SIZE;
-    let spare_bytes = buffer.len() % BLOCK_SIZE;
-
-    //(2) Write full buffer to disk
-    self.writer_handle.write_all(&buffer)?;
-
-    //(3) Pad with zeroes to ensure that file size is multiple of BLOCK_LEN
-    let padding = vec![0x00u8; BLOCK_SIZE - spare_bytes];
-    self.writer_handle.write_all(&padding)?;
-
-    //(4) Flush to ensure that buffer and padding are in right order
-    self.flush()?;
-
-    //(R) return number of blocks written (= n_full_blocks + 1)
-    Ok(n_full_blocks + 1)
-  }
-
-  pub(crate) fn flush(&mut self) -> io::Result<()> {
-    Ok(self.writer_handle.flush()?)
+  fn flush(&mut self) -> std::io::Result<()> {
+    self.writer_handle.flush()
   }
 }

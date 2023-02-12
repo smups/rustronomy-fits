@@ -25,3 +25,4 @@
 
 pub mod fits;
 pub mod hdu;
+pub mod io;

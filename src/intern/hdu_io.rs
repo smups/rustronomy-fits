@@ -21,14 +21,16 @@
 
 use std::error::Error;
 
-use crate::hdu::Hdu;
+use crate::{hdu::Hdu, api::io::*};
 
-use super::FitsReader;
-
-pub fn read_hdu(reader: &mut FitsReader) -> Result<Hdu, Box<dyn Error>> {
+pub fn read_hdu(reader: &mut impl FitsReader) -> Result<Hdu, Box<dyn Error>> {
   //(1) Decode the header
   let (opts, meta) = super::header_io::read_header(reader)?;
 
   //(2) Determine the kind of HDU we got
+  todo!()
+}
+
+pub fn write_hdu(hdu: Hdu, writer: &mut impl FitsWriter) -> Result<(), Box<dyn Error>> {
   todo!()
 }

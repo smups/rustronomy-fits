@@ -24,9 +24,9 @@ use std::{error::Error, str::FromStr};
 use chrono::{DateTime, Utc};
 use rustronomy_core::universal_containers::{metadata::TagError, MetaDataContainer};
 
-use crate::err::io_err::FitsReadErr;
+use crate::{err::io_err::FitsReadErr, api::io::*};
 
-use super::{FitsOptions, FitsReader};
+use super::FitsOptions;
 
 //Comment separator
 const SEP: char = '/';
@@ -55,7 +55,7 @@ const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encod
 const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encoding";
 
 pub fn read_header(
-  reader: &mut FitsReader,
+  reader: &mut impl FitsReader,
 ) -> Result<(FitsOptions, impl MetaDataContainer), Box<dyn Error>> {
   //(1) Start with reading the raw bytes from storage
   let bytes = read_header_blocks(reader)?;
@@ -74,7 +74,7 @@ pub fn read_header(
 
 /// Reads FITS blocks from the reader until encountering the END keyword or until
 /// an error occurs. All blocks are appended to a single buffer.
-fn read_header_blocks(reader: &mut FitsReader) -> Result<Vec<u8>, FitsReadErr> {
+fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadErr> {
   //container to collect into
   let mut header_bytes = Vec::with_capacity(crate::BLOCK_SIZE);
 

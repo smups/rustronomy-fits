@@ -51,7 +51,7 @@ use std::{error::Error, fmt::Display, path::Path};
 
 use rustronomy_core::universal_containers::*;
 
-use super::hdu::Hdu;
+use crate::{api::hdu::Hdu, intern};
 
 #[derive(Debug)]
 pub struct Fits {
@@ -61,6 +61,15 @@ pub struct Fits {
 
 impl Fits {
   pub fn read(path: &Path) -> Result<Self, Box<dyn Error>> {
+    //(1) Try to create FITS reader from path
+    let mut reader = intern::FitsFileReader::new(path)?;
+
+    //(2) Read primary HDU
+    let hdu_prim = intern::read_hdu(&mut reader)?;
+
+    //(2a) If the primary HDU has the extended kw, we should save its tags
+    //to be inherited by the next HDU's
+
     todo!()
   }
   pub fn write(self, path: &Path) -> Result<(), Box<dyn Error>> {
