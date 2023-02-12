@@ -19,12 +19,12 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use std::{str::FromStr, error::Error};
+use std::{error::Error, str::FromStr};
 
 use chrono::{DateTime, Utc};
-use rustronomy_core::universal_containers::{MetaDataContainer, metadata::TagError};
+use rustronomy_core::universal_containers::{metadata::TagError, MetaDataContainer};
 
-use crate::{err::io_err::FitsReadErr};
+use crate::err::io_err::FitsReadErr;
 
 use super::{FitsOptions, FitsReader};
 
@@ -54,7 +54,9 @@ const OBJECT: &str = "OBJECT";
 const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encoding";
 const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encoding";
 
-pub fn read_header(reader: &mut FitsReader) -> Result<(FitsOptions, impl MetaDataContainer), Box<dyn Error>> {
+pub fn read_header(
+  reader: &mut FitsReader,
+) -> Result<(FitsOptions, impl MetaDataContainer), Box<dyn Error>> {
   //(1) Start with reading the raw bytes from storage
   let bytes = read_header_blocks(reader)?;
 
@@ -156,7 +158,7 @@ pub enum ConcatErr {
   NoValue(&'static str),
   NaxisOob { idx: usize, n_axes: u16 },
   FormatErr(&'static str, String),
-  RestrictedKw(&'static str)
+  RestrictedKw(&'static str),
 }
 
 impl ConcatErr {
@@ -176,7 +178,7 @@ impl std::fmt::Display for ConcatErr {
       FormatErr(kw, err) => {
         write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", kw, err)
       }
-      RestrictedKw(kw) => write!(f, "tried to insert restricted keyword \"{}\"", kw)
+      RestrictedKw(kw) => write!(f, "tried to insert restricted keyword \"{}\"", kw),
     }?;
     writeln!(f, "{}", Self::ERROR_END)
   }
@@ -191,12 +193,12 @@ impl From<chrono::ParseError> for ConcatErr {
 
 impl From<TagError> for ConcatErr {
   fn from(err: TagError) -> Self {
-    use TagError::*;
     use ConcatErr::*;
+    use TagError::*;
     match err {
       TagParseError(msg) => FormatErr("unknown", msg),
       RestrictedTagError(tag) => RestrictedKw("unknown"),
-      other => FormatErr("unkown", other.to_string())
+      other => FormatErr("unkown", other.to_string()),
     }
   }
 }
@@ -334,14 +336,22 @@ fn parse_naxis(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Res
   Ok(())
 }
 
-fn parse_simple(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), ConcatErr> {
+fn parse_simple(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), ConcatErr> {
   let conforming = value.ok_or(ConcatErr::NoValue(SIMPLE))?;
   options.conforming = super::keyword_utils::parse_fits_bool(conforming)
     .map_err(|e| ConcatErr::FormatErr(SIMPLE, format!("{e}")))?;
   Ok(())
 }
 
-fn parse_bitpix(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), ConcatErr> {
+fn parse_bitpix(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), ConcatErr> {
   options.bitpix = value
     .ok_or(ConcatErr::NoValue(BITPIX))?
     .parse()
@@ -357,13 +367,27 @@ fn insert_meta_tag(
 ) -> Result<(), ConcatErr> {
   let result = match key {
     //Reserved kw describing observations
-    DATE_OBS => { metadata.insert_date(value.parse()?); },
-    DATE => { metadata.insert_last_modified(value.parse()?); },
-    AUTHOR => { metadata.insert_author(value.to_string()); },
-    REFERENC => { metadata.insert_reference(value.to_string()); },
-    TELESCOP => { metadata.insert_telescope(value.to_string()); },
-    INSTRUME => { metadata.insert_instrument(value.to_string()); },
-    OBJECT => { metadata.insert_object(value.to_string()); },
+    DATE_OBS => {
+      metadata.insert_date(value.parse()?);
+    }
+    DATE => {
+      metadata.insert_last_modified(value.parse()?);
+    }
+    AUTHOR => {
+      metadata.insert_author(value.to_string());
+    }
+    REFERENC => {
+      metadata.insert_reference(value.to_string());
+    }
+    TELESCOP => {
+      metadata.insert_telescope(value.to_string());
+    }
+    INSTRUME => {
+      metadata.insert_instrument(value.to_string());
+    }
+    OBJECT => {
+      metadata.insert_object(value.to_string());
+    }
     BLANK => (), //do nothing
     other => {
       //Non restricted key!
@@ -481,14 +505,20 @@ fn naxis_option_test() {
 fn naxis_oob_test() {
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = ("NAXIS1", Some("1200"), None);
   let mut input_options = FitsOptions::new_invalid();
-  assert!(matches!(parse_naxis(TEST_RECS.0, TEST_RECS.1, &mut input_options), Err(ConcatErr::NaxisOob{ idx: 1, n_axes: 0 })))
+  assert!(matches!(
+    parse_naxis(TEST_RECS.0, TEST_RECS.1, &mut input_options),
+    Err(ConcatErr::NaxisOob { idx: 1, n_axes: 0 })
+  ))
 }
 
 #[test]
 fn invalid_novalue_simple_test() {
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, None, None);
   let mut input_options = FitsOptions::new_invalid();
-  assert!(matches!(parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options), Err(ConcatErr::NoValue(_))));
+  assert!(matches!(
+    parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options),
+    Err(ConcatErr::NoValue(_))
+  ));
 }
 
 #[test]
@@ -515,5 +545,8 @@ fn bitpix_option_test() {
 fn invalid_novalue_bitpix_test() {
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, None, None);
   let mut input_options = FitsOptions::new_invalid();
-  assert!(matches!(parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options), Err(ConcatErr::NoValue(_))));
+  assert!(matches!(
+    parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options),
+    Err(ConcatErr::NoValue(_))
+  ));
 }
