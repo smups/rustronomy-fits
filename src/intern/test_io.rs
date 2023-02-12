@@ -48,7 +48,10 @@ impl<'a> FitsReader for TestIo<'a> {
     }
 
     //(3) Check if we have bytes left to yield
-    if self.cursor + bytes_to_read < self.data.len() {
+    if self.data.len() < bytes_to_read {
+      //Not enough bytes in this file
+      Err(FitsReadErr::FileSize(self.data.len()))
+    } else if self.cursor + bytes_to_read < self.data.len() {
       //Still bytes left, go ahead and copy them into the buffer
       buffer.copy_from_slice(&self.data[self.cursor..self.cursor + bytes_to_read]);
       Ok(bytes_to_read / BLOCK_SIZE)
