@@ -447,10 +447,7 @@ fn orphaned_continue_test() {
   ];
   const META_ANSWER: (&str, &str) = ("TEST_GARBAGE", "value");
   let mut input_options = FitsOptions::new_invalid();
-  let (meta, comments, _) = concat_records(&TEST_RECS, &mut input_options).unwrap();
-  assert!(meta.len() == 1);
-  assert!(&meta[0].0 == META_ANSWER.0 && &meta[0].1 == META_ANSWER.1);
-  assert!(&comments == TEST_COMMENT);
+  todo!()
 }
 
 #[test]
@@ -458,7 +455,7 @@ fn invalid_novalue_continue_test() {
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 2] =
     [("GARBAGE", Some("'hmm&'"), None), (CONTINUE, None, None)];
   let mut dummy_options = FitsOptions::new_invalid();
-  assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
+  todo!()
 }
 
 #[test]
@@ -472,42 +469,51 @@ fn naxis_option_test() {
   ];
   const TEST_ANSWER: [u16; 3] = [1000, 2250, 272];
   let mut input_options = FitsOptions::new_invalid();
-  let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
+  for (key, value, comment) in TEST_RECS {
+    parse_naxis(key, value, &mut input_options).unwrap();
+  }
   assert!(input_options.dim == input_options.shape.len() as u16);
   assert!(input_options.shape.len() == TEST_ANSWER.len());
   assert!(input_options.shape == TEST_ANSWER);
 }
 
 #[test]
+fn naxis_oob_test() {
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = ("NAXIS1", Some("1200"), None);
+  let mut input_options = FitsOptions::new_invalid();
+  assert!(matches!(parse_naxis(TEST_RECS.0, TEST_RECS.1, &mut input_options), Err(ConcatErr::NaxisOob{ idx: 1, n_axes: 0 })))
+}
+
+#[test]
 fn invalid_novalue_simple_test() {
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(SIMPLE, None, None)];
-  let mut dummy_options = FitsOptions::new_invalid();
-  assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, None, None);
+  let mut input_options = FitsOptions::new_invalid();
+  assert!(matches!(parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options), Err(ConcatErr::NoValue(_))));
 }
 
 #[test]
 fn simple_option_test() {
   //Setup dummy data
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(SIMPLE, Some("T"), None)];
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, Some("T"), None);
   const TEST_ANSWER: bool = true;
   let mut input_options = FitsOptions::new_invalid();
-  concat_records(&TEST_RECS, &mut input_options).unwrap();
+  parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
   assert!(input_options.conforming == TEST_ANSWER);
 }
 
 #[test]
 fn bitpix_option_test() {
   //Setup dummy data
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(BITPIX, Some("-32"), None)];
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, Some("-32"), None);
   const TEST_ANSWER: i8 = -32;
   let mut input_options = FitsOptions::new_invalid();
-  let _ = concat_records(&TEST_RECS, &mut input_options).unwrap();
+  parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
   assert!(input_options.bitpix == TEST_ANSWER);
 }
 
 #[test]
 fn invalid_novalue_bitpix_test() {
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 1] = [(BITPIX, None, None)];
-  let mut dummy_options = FitsOptions::new_invalid();
-  assert!(matches!(concat_records(&TEST_RECS, &mut dummy_options), Err(ConcatErr::NoValue(_))));
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, None, None);
+  let mut input_options = FitsOptions::new_invalid();
+  assert!(matches!(parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options), Err(ConcatErr::NoValue(_))));
 }
