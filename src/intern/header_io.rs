@@ -197,7 +197,7 @@ impl From<TagError> for ConcatErr {
     use TagError::*;
     match err {
       TagParseError(msg) => FormatErr("unknown", msg),
-      RestrictedTagError(tag) => RestrictedKw("unknown"),
+      RestrictedTagError(_tag) => RestrictedKw("unknown"),
       other => FormatErr("unkown", other.to_string()),
     }
   }
@@ -362,41 +362,40 @@ fn parse_bitpix(
 fn insert_meta_tag(
   key: &str,
   value: &str,
-  comment: Option<&str>,
+  _comment: Option<&str>,
   metadata: &mut impl MetaDataContainer,
 ) -> Result<(), ConcatErr> {
-  let result = match key {
+  Ok( match key {
     //Reserved kw describing observations
     DATE_OBS => {
-      metadata.insert_date(value.parse()?);
+      metadata.insert_date(value.parse()?)?;
     }
     DATE => {
-      metadata.insert_last_modified(value.parse()?);
+      metadata.insert_last_modified(value.parse()?)?;
     }
     AUTHOR => {
-      metadata.insert_author(value.to_string());
+      metadata.insert_author(value.to_string())?;
     }
     REFERENC => {
-      metadata.insert_reference(value.to_string());
+      metadata.insert_reference(value.to_string())?;
     }
     TELESCOP => {
-      metadata.insert_telescope(value.to_string());
+      metadata.insert_telescope(value.to_string())?;
     }
     INSTRUME => {
-      metadata.insert_instrument(value.to_string());
+      metadata.insert_instrument(value.to_string())?;
     }
     OBJECT => {
-      metadata.insert_object(value.to_string());
+      metadata.insert_object(value.to_string())?;
     }
     BLANK => (), //do nothing
     other => {
       //Non restricted key!
       metadata
         .insert_generic_tag(key, value.to_string())
-        .expect("error on non-restricted key. This is a BUG");
+        .expect(&format!("error on non-restricted key \"{other}\". This is a BUG"));
     }
-  };
-  Ok(())
+  })
 }
 
 ////////////////////////////////////////////////////////////////////////////////
