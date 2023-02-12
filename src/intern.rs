@@ -31,6 +31,7 @@ use header_io::*;
 
 //module structure
 mod file_io;
+mod test_io;
 mod hdu_io;
 mod header_io;
 mod keyword_utils;
