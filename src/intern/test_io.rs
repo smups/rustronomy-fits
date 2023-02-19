@@ -21,19 +21,27 @@
 
 use crate::{io::FitsReader, err::io_err::FitsReadErr, BLOCK_SIZE};
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct TestIo<'a> {
   data: &'a [u8],
   cursor: usize
 }
 
 impl<'a> TestIo<'a> {
+  /// Static const constructor
   pub const fn new_const(data: &'static [u8]) -> TestIo<'static> {
     TestIo { data, cursor: 0 }
   }
 
+  /// Non-static constructor
   pub fn new(data: &'a [u8]) -> Self {
     TestIo { data, cursor: 0 }
+  }
+
+  /// Returns a `TestIo<'a>` pointing to the same data as `self`, but with the
+  /// cursor reset to zero.
+  pub const fn clone(&self) -> Self {
+    TestIo { data: self.data, cursor: 0 }
   }
 }
 
@@ -49,11 +57,12 @@ impl<'a> FitsReader for TestIo<'a> {
 
     //(3) Check if we have bytes left to yield
     if self.data.len() < bytes_to_read {
-      //Not enough bytes in this file
+      //Not enough bytes in this file (do not modify cursor)
       Err(FitsReadErr::FileSize(self.data.len()))
-    } else if self.cursor + bytes_to_read < self.data.len() {
-      //Still bytes left, go ahead and copy them into the buffer
+    } else if self.cursor + bytes_to_read <= self.data.len() {
+      //Still bytes left, go ahead and copy them into the buffer (modify cursor)
       buffer.copy_from_slice(&self.data[self.cursor..self.cursor + bytes_to_read]);
+      self.cursor += bytes_to_read / BLOCK_SIZE;
       Ok(bytes_to_read / BLOCK_SIZE)
     } else {
       Err(FitsReadErr::EndOfFile{
