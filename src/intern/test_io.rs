@@ -46,6 +46,14 @@ fn test_testio_new() {
   assert_eq!(TestIo::new(data), TestIo { data, cursor: 0 });
 }
 
+#[test]
+fn test_testio_clone() {
+  let x = TestIo { data: &[1,2,3,4,5], cursor: 12 };
+  let y = x.clone();
+  assert_ne!(x, y);
+  assert_eq!(x.data, y.data);
+}
+
 impl<'a> FitsReader for TestIo<'a> {
   fn read_blocks_into(&mut self, buffer: &mut [u8]) -> Result<usize, FitsReadErr> {
     //(1) Get the number of bytes we have to read
