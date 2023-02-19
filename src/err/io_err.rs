@@ -28,11 +28,14 @@ pub enum FitsReadErr {
     This error may be thrown when opening a FITS file. If the FITS file has
     invalid encoding (for whatever reason), this error will be thrown.
   */
-  IOErr(std::io::Error), // <- Some IO error
-  FileSize(usize),       // <- file was not a multiple of BLOCK_SIZE
-  BufferSize(usize),     // <- buffer was not a multiple of BLOCK_SIZE
-  EndOfFile { file_size: usize, blocks_read: usize }, // <- tried to read more bytes
-                         // than the file contains
+  /// An IO error occurred while decoding the file
+  IOErr(std::io::Error),
+  /// The size of the byte source is not a clean multiple of BLOCK_SIZE
+  SourceNotBLockSized(usize),
+  /// The size of the byte target is not a clean multiple of BLOCK_SIZE
+  DestNotBlockSized(usize),
+  /// Source contained fewer bytes than we requested to read
+  EndOfSource { file_size: usize, blocks_read: usize }
 }
 
 impl Display for FitsReadErr {
@@ -40,21 +43,21 @@ impl Display for FitsReadErr {
     use FitsReadErr::*;
     write!(f, "Error while reading from FITS file: ")?;
     match self {
-      BufferSize(invalid_size) => {
+      DestNotBlockSized(invalid_size) => {
         write!(
           f,
           "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
           crate::BLOCK_SIZE
         )
       }
-      FileSize(invalid_size) => {
+      SourceNotBLockSized(invalid_size) => {
         write!(
           f,
           "file size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
           crate::BLOCK_SIZE
         )
       }
-      EndOfFile { file_size, blocks_read } => {
+      EndOfSource { file_size, blocks_read } => {
         write!(
           f,
           "tried to read {blocks_read} FITS blocks, but file is only {file_size} blocks long"
@@ -77,8 +80,10 @@ impl From<std::io::Error> for FitsReadErr {
 #[derive(Debug)]
 /// This error may be thrown by a `FitsWriter` when writing to a FITS file
 pub enum FitsWriteErr {
-  IOErr(std::io::Error), // <- some IO error
-  BufferSize(usize),     // <- buffer was not a multiple of BLOCK_SIZE
+  /// An IO error occured while writing the FITS file
+  IOErr(std::io::Error),
+  /// The provided byte source was not a clean multiple of BLOCK_SIZE
+  SourceSize(usize)
 }
 
 impl Display for FitsWriteErr {
@@ -86,7 +91,7 @@ impl Display for FitsWriteErr {
     use FitsWriteErr::*;
     write!(f, "Error while writing to FITS file: ")?;
     match self {
-      BufferSize(invalid_size) => {
+      SourceSize(invalid_size) => {
         write!(
           f,
           "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
