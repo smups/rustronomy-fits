@@ -19,7 +19,10 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use crate::{io::FitsReader, err::io_err::FitsReadErr, BLOCK_SIZE};
+use crate::{io::FitsReader, BLOCK_SIZE};
+
+// Shorthand error type
+type Error = crate::err::io_err::FitsReadErr;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TestIo<'a> {
@@ -55,20 +58,20 @@ fn test_testio_clone() {
 }
 
 impl<'a> FitsReader for TestIo<'a> {
-  fn read_blocks_into(&mut self, buffer: &mut [u8]) -> Result<usize, FitsReadErr> {
+  fn read_blocks_into(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
     //(1) Get the number of bytes we have to read
     let bytes_to_read = buffer.len();
 
     //(2) Check that the buffer is a multiple of BLOCK_SIZE
     if bytes_to_read % BLOCK_SIZE != 0 {
-      Err(FitsReadErr::DestNotBlockSized(bytes_to_read))?
+      Err(Error::DestNotBlockSized(bytes_to_read))?
     }
 
     //(3) Check that the file is large enough to fill the buffer
     let blcks_req = buffer.len() / BLOCK_SIZE;
     let blcks_remain = (self.data.len() / BLOCK_SIZE) - self.cursor;
     if blcks_remain < blcks_req {
-      Err(FitsReadErr::EndOfSource{ blcks_remain, blcks_req })?
+      Err(Error::EndOfSource{ blcks_remain, blcks_req })?
     }
 
     //(4) Read the blocks from cursor to cursor + blcks_req into the buffer
@@ -82,6 +85,38 @@ impl<'a> FitsReader for TestIo<'a> {
     //(R) the amount of blocks read
     Ok(blcks_req)
   }
+}
+
+#[test]
+fn test_testio_fitsreader_dest_not_block_sized() {
+  let mut rdr = TestIo::new("hello world!".as_bytes());
+  assert!(matches!(rdr.read_blocks_into(&mut [0u8; 12]), Err(Error::DestNotBlockSized(_))))
+}
+
+#[test]
+fn test_testio_fitsreader_source_st_dest() {
+  let mut rdr = TestIo::new(&[0; crate::BLOCK_SIZE]);
+  assert!(matches!(rdr.read_blocks_into(&mut [0; 2*crate::BLOCK_SIZE]), Err(Error::EndOfSource { .. })));
+}
+
+#[test]
+fn test_testio_fitsreader_read_too_much() {
+  let mut rdr = TestIo::new(&[0; crate::BLOCK_SIZE]);
+  //This read should work
+  rdr.read_blocks_into(&mut [0; crate::BLOCK_SIZE]).unwrap();
+  //This one should not
+  assert!(matches!(rdr.read_blocks_into(&mut [0; 2*crate::BLOCK_SIZE]), Err(Error::EndOfSource { .. })));
+}
+
+#[test]
+fn test_testio_fitsreader_read() {
+  let source = &[132; crate::BLOCK_SIZE];
+  let mut dest = [0; crate::BLOCK_SIZE];
+  let mut rdr = TestIo::new(source);
+
+  rdr.read_blocks_into(&mut dest).unwrap();
+  assert_eq!(source, &dest);
+  assert_eq!(rdr.cursor, 1);
 }
 
 #[cfg(test)]
