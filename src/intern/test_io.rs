@@ -21,20 +21,15 @@
 
 use crate::{io::FitsReader, err::io_err::FitsReadErr, BLOCK_SIZE};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TestIo<'a> {
   data: &'a [u8],
   cursor: usize
 }
 
 impl<'a> TestIo<'a> {
-  /// Static const constructor
-  pub const fn new_const(data: &'static [u8]) -> TestIo<'static> {
-    TestIo { data, cursor: 0 }
-  }
-
   /// Non-static constructor
-  pub fn new(data: &'a [u8]) -> Self {
+  pub const fn new(data: &'a [u8]) -> Self {
     TestIo { data, cursor: 0 }
   }
 
@@ -45,6 +40,12 @@ impl<'a> TestIo<'a> {
   }
 }
 
+#[test]
+fn test_testio_new() {
+  let data = &[1,2,3,4,5];
+  assert_eq!(TestIo::new(data), TestIo { data, cursor: 0 });
+}
+
 impl<'a> FitsReader for TestIo<'a> {
   fn read_blocks_into(&mut self, buffer: &mut [u8]) -> Result<usize, FitsReadErr> {
     //(1) Get the number of bytes we have to read
@@ -52,24 +53,26 @@ impl<'a> FitsReader for TestIo<'a> {
 
     //(2) Check that the buffer is a multiple of BLOCK_SIZE
     if bytes_to_read % BLOCK_SIZE != 0 {
-      Err(FitsReadErr::BufferSize(bytes_to_read))?
+      Err(FitsReadErr::DestNotBlockSized(bytes_to_read))?
     }
 
-    //(3) Check if we have bytes left to yield
-    if self.data.len() < bytes_to_read {
-      //Not enough bytes in this file (do not modify cursor)
-      Err(FitsReadErr::FileSize(self.data.len()))
-    } else if self.cursor + bytes_to_read <= self.data.len() {
-      //Still bytes left, go ahead and copy them into the buffer (modify cursor)
-      buffer.copy_from_slice(&self.data[self.cursor..self.cursor + bytes_to_read]);
-      self.cursor += bytes_to_read / BLOCK_SIZE;
-      Ok(bytes_to_read / BLOCK_SIZE)
-    } else {
-      Err(FitsReadErr::EndOfFile{
-        file_size: self.data.len() / BLOCK_SIZE,
-        blocks_read: (self.cursor + bytes_to_read) / BLOCK_SIZE
-      })
+    //(3) Check that the file is large enough to fill the buffer
+    let blcks_req = buffer.len() / BLOCK_SIZE;
+    let blcks_remain = (self.data.len() / BLOCK_SIZE) - self.cursor;
+    if blcks_remain < blcks_req {
+      Err(FitsReadErr::EndOfSource{ blcks_remain, blcks_req })?
     }
+
+    //(4) Read the blocks from cursor to cursor + blcks_req into the buffer
+    let start = self.cursor * BLOCK_SIZE;
+    let stop = (self.cursor + blcks_req) * BLOCK_SIZE;
+    buffer.copy_from_slice(&self.data[start..stop]);
+
+    //(5) Update the cursor
+    self.cursor += blcks_req;
+    
+    //(R) the amount of blocks read
+    Ok(blcks_req)
   }
 }
 
@@ -91,16 +94,16 @@ pub mod mock_data {
 
   type TestIo = super::TestIo<'static>;
 
-  pub static ASTRO_UIT: TestIo = TestIo::new_const(ASTRO_UIT_BYTES);
-  pub static EUVE: TestIo = TestIo::new_const(EUVE_BYTES);
-  pub static IUE_LWP: TestIo = TestIo::new_const(IUE_LWP_BYTES);
-  pub static RANDOM_GROUPS: TestIo = TestIo::new_const(RANDOM_GROUPS_BYTES);
+  pub static ASTRO_UIT: TestIo = TestIo::new(ASTRO_UIT_BYTES);
+  pub static EUVE: TestIo = TestIo::new(EUVE_BYTES);
+  pub static IUE_LWP: TestIo = TestIo::new(IUE_LWP_BYTES);
+  pub static RANDOM_GROUPS: TestIo = TestIo::new(RANDOM_GROUPS_BYTES);
 
-  pub static HUBBLE_FGS: TestIo = TestIo::new_const(HUBBLE_FGS_BYTES);
-  pub static HUBBLE_FOC: TestIo = TestIo::new_const(HUBBLE_FOC_BYTES);
-  pub static HUBBLE_FOS: TestIo = TestIo::new_const(HUBBLE_FOS_BYTES);
-  pub static HUBBLE_HRS: TestIo = TestIo::new_const(HUBBLE_HRS_BYTES);
-  pub static HUBBLE_NICMOS: TestIo = TestIo::new_const(HUBBLE_NICMOS_BYTES);
-  pub static HUBBLE_WFPC2_1: TestIo = TestIo::new_const(HUBBLE_WFPC2_1_BYTES);
-  pub static HUBBLE_WFPC2_2: TestIo = TestIo::new_const(HUBBLE_WFPC2_2_BYTES);
+  pub static HUBBLE_FGS: TestIo = TestIo::new(HUBBLE_FGS_BYTES);
+  pub static HUBBLE_FOC: TestIo = TestIo::new(HUBBLE_FOC_BYTES);
+  pub static HUBBLE_FOS: TestIo = TestIo::new(HUBBLE_FOS_BYTES);
+  pub static HUBBLE_HRS: TestIo = TestIo::new(HUBBLE_HRS_BYTES);
+  pub static HUBBLE_NICMOS: TestIo = TestIo::new(HUBBLE_NICMOS_BYTES);
+  pub static HUBBLE_WFPC2_1: TestIo = TestIo::new(HUBBLE_WFPC2_1_BYTES);
+  pub static HUBBLE_WFPC2_2: TestIo = TestIo::new(HUBBLE_WFPC2_2_BYTES);
 }
