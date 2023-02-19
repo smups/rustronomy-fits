@@ -35,7 +35,7 @@ pub enum FitsReadErr {
   /// The size of the byte target is not a clean multiple of BLOCK_SIZE
   DestNotBlockSized(usize),
   /// Source contained fewer bytes than we requested to read
-  EndOfSource { file_size: usize, blocks_read: usize }
+  EndOfSource { blcks_remain: usize, blcks_req: usize }
 }
 
 impl Display for FitsReadErr {
@@ -57,7 +57,7 @@ impl Display for FitsReadErr {
           crate::BLOCK_SIZE
         )
       }
-      EndOfSource { file_size, blocks_read } => {
+      EndOfSource { blcks_remain: file_size, blcks_req: blocks_read } => {
         write!(
           f,
           "tried to read {blocks_read} FITS blocks, but file is only {file_size} blocks long"
