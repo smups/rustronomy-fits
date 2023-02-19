@@ -72,3 +72,35 @@ impl<'a> FitsReader for TestIo<'a> {
     }
   }
 }
+
+#[cfg(test)]
+/// Test FITS files, courtesy of NASA
+pub mod mock_data {
+  pub const ASTRO_UIT_BYTES: &'static [u8; 538560] = include_bytes!("../../resources/Astro_UIT.fits");
+  pub const EUVE_BYTES: &'static [u8; 4291200] = include_bytes!("../../resources/EUVE.fits");
+  pub const IUE_LWP_BYTES: &'static [u8; 48960] = include_bytes!("../../resources/IUE_LWP.fits");
+  pub const RANDOM_GROUPS_BYTES: &'static [u8; 596160] = include_bytes!("../../resources/RandomGroups.fits");
+
+  pub const HUBBLE_FGS_BYTES: &'static [u8; 2540160] = include_bytes!("../../resources/Hubble_FGS.fits");
+  pub const HUBBLE_FOC_BYTES: &'static [u8; 4219200] = include_bytes!("../../resources/Hubble_FOC.fits");
+  pub const HUBBLE_FOS_BYTES: &'static [u8; 43200] = include_bytes!("../../resources/Hubble_FOS.fits");
+  pub const HUBBLE_HRS_BYTES: &'static [u8; 69120] = include_bytes!("../../resources/Hubble_HRS.fits");
+  pub const HUBBLE_NICMOS_BYTES: &'static [u8; 1198080] = include_bytes!("../../resources/Hubble_NICMOS.fits");
+  pub const HUBBLE_WFPC2_1_BYTES: &'static [u8; 699840] = include_bytes!("../../resources/Hubble_WFPC2_1.fits");
+  pub const HUBBLE_WFPC2_2_BYTES: &'static [u8; 63360] = include_bytes!("../../resources/Hubble_WFPC2_2.fits");
+
+  type TestIo = super::TestIo<'static>;
+
+  pub static ASTRO_UIT: TestIo = TestIo::new_const(ASTRO_UIT_BYTES);
+  pub static EUVE: TestIo = TestIo::new_const(EUVE_BYTES);
+  pub static IUE_LWP: TestIo = TestIo::new_const(IUE_LWP_BYTES);
+  pub static RANDOM_GROUPS: TestIo = TestIo::new_const(RANDOM_GROUPS_BYTES);
+
+  pub static HUBBLE_FGS: TestIo = TestIo::new_const(HUBBLE_FGS_BYTES);
+  pub static HUBBLE_FOC: TestIo = TestIo::new_const(HUBBLE_FOC_BYTES);
+  pub static HUBBLE_FOS: TestIo = TestIo::new_const(HUBBLE_FOS_BYTES);
+  pub static HUBBLE_HRS: TestIo = TestIo::new_const(HUBBLE_HRS_BYTES);
+  pub static HUBBLE_NICMOS: TestIo = TestIo::new_const(HUBBLE_NICMOS_BYTES);
+  pub static HUBBLE_WFPC2_1: TestIo = TestIo::new_const(HUBBLE_WFPC2_1_BYTES);
+  pub static HUBBLE_WFPC2_2: TestIo = TestIo::new_const(HUBBLE_WFPC2_2_BYTES);
+}
