@@ -40,6 +40,13 @@ pub trait FitsReader {
     Ok(buffer)
   }
 
+  /// Returns the length of the source of the bytes that the reader returns (the
+  /// size of the underlying file or stream)
+  /// 
+  /// # Returns
+  /// size of underlying byte source *in bytes*, not in FITS blocks
+  fn source_len_bytes(&self) -> usize;
+
   /// Fills the provided buffer with data from the underlying FITS file. FITS
   /// files may only be read in multiples of 2880 bytes, so this function will
   /// return an error if the provided buffer length is not a multiple of 2880.
