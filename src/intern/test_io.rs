@@ -85,6 +85,10 @@ impl<'a> FitsReader for TestIo<'a> {
     //(R) the amount of blocks read
     Ok(blcks_req)
   }
+
+  fn source_len_bytes(&self) -> usize {
+    self.data.len()
+  }
 }
 
 #[test]

@@ -58,7 +58,7 @@ impl FitsFileReader {
 
     if file_size % BLOCK_SIZE != 0 {
       //Throw an error for files that are not integer multiples of 2880
-      return Err(FitsReadErr::FileSize(file_size));
+      return Err(FitsReadErr::SourceNotBLockSized(file_size));
     }
     let n_fits_blocks = file_size / BLOCK_SIZE;
 
@@ -74,15 +74,15 @@ impl FitsReader for FitsFileReader {
 
     //(2) Check if the buffer is an integer multiple of a FITS block
     if n_blocks * BLOCK_SIZE != buffer.len() {
-      return Err(FitsReadErr::BufferSize(buffer.len()));
+      return Err(FitsReadErr::DestNotBlockSized(buffer.len()));
     }
 
     //(3) Check if the number of header blocks we need to read does not exceed
     //the number of header blocks still left in the file
     if n_blocks > (self.n_fits_blocks - self.block_index) {
-      return Err(FitsReadErr::EndOfFile {
-        file_size: self.n_fits_blocks,
-        blocks_read: n_blocks + self.block_index,
+      return Err(FitsReadErr::EndOfSource {
+        blcks_remain: self.n_fits_blocks,
+        blcks_req: n_blocks + self.block_index,
       });
     }
 
@@ -94,6 +94,10 @@ impl FitsReader for FitsFileReader {
 
     //(R) return the number of blocks read
     Ok(n_blocks)
+  }
+
+  fn source_len_bytes(&self) -> usize {
+    self.file_meta.len() as usize
   }
 }
 
@@ -138,7 +142,7 @@ impl FitsWriter for FitsFileWriter {
   fn write_blocks_from(&mut self, buffer: &[u8]) -> Result<usize, FitsWriteErr> {
     //(1) Check if the buffer is an integer multiple of BLOCK_LEN
     if buffer.len() % BLOCK_SIZE != 0 {
-      return Err(FitsWriteErr::BufferSize(buffer.len()));
+      return Err(FitsWriteErr::SourceSize(buffer.len()));
     }
 
     //(2) Calculate size of buffer in FITS blocks
