@@ -87,8 +87,8 @@ fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadE
       If neither of these is true, continue reading FITS blocks
     */
     let last_record = &block[crate::BLOCK_SIZE - crate::RECORD_SIZE..crate::BLOCK_SIZE];
-    let last_key = std::str::from_utf8(&last_record[0..8]).expect(UTF8_KEYERR).trim();
-    if last_key == "" || last_key == END {
+    let last_keyword = std::str::from_utf8(&last_record[0..8]).expect(UTF8_KEYERR).trim();
+    if last_record == &[' ' as u8; 80] || last_keyword == END {
       //append the last block and return
       header_bytes.append(&mut block);
       break header_bytes;
@@ -104,6 +104,25 @@ fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadE
     "irregularly sized FITS block found while reading -- THIS IS A BUG --"
   );
   Ok(header_bytes)
+}
+
+#[test]
+fn read_single_header_block() {
+  use super::test_io::TestIo;
+  let mut test_reader = TestIo::new(&[' ' as u8; crate::BLOCK_SIZE]);
+  assert_eq!(read_header_blocks(&mut test_reader).unwrap(), &[' ' as u8; crate::BLOCK_SIZE]);
+}
+
+#[test]
+fn read_multiple_header_blocks() {
+  use super::test_io::mock_data;
+  let mut test_reader = mock_data::ASTRO_UIT.clone();
+  //Header is 4 FITS blocks long
+  const HDR_SIZE: usize = 4 * crate::BLOCK_SIZE;
+  assert_eq!(
+    &read_header_blocks(&mut test_reader).unwrap().len() / crate::BLOCK_SIZE,
+    &mock_data::ASTRO_UIT_BYTES[0..HDR_SIZE].len() / crate::BLOCK_SIZE
+  )
 }
 
 /// This function takes a 80-byte FITS keyword-record and splits it into a
