@@ -53,7 +53,7 @@
 
 use crate::api::hdu::Hdu;
 
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 /// User-facing struct representing a FITS file
 pub struct Fits {
   data: Vec<Option<Hdu>>,
