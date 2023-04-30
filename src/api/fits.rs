@@ -63,7 +63,13 @@ impl Fits {
   /// Returns the HDU at the specified slot number. If the slot number is
   /// unoccupied, None is returned.
   pub fn remove_hdu(&mut self, slotnr: usize) -> Option<Hdu> {
-    Some(std::mem::take(self.data.get_mut(idx)?))
+    Some(std::mem::take(self.data.get_mut(slotnr)?))
+  }
+
+  /// Cleans up unused HDU slots in the Fits struct. This operation does not
+  /// preserve the order of the HDU's in the Fits file!
+  pub fn clean(&mut self) {
+    self.data = self.data.into_iter().filter(|x| x.is_some()).collect();
   }
 }
 
