@@ -66,6 +66,21 @@ impl Fits {
     Some(std::mem::take(self.data.get_mut(slotnr)?))
   }
 
+  /// Swaps HDU entry at slot number with a new hdu, returning the old HDU (if
+  /// one was present). If slotnr was not assigned yet, the HDU is appended
+  /// instead.
+  pub fn swap_hdu(&mut self, hdu: &Hdu, slotnr: usize) -> Option<Hdu> {
+    //First append the new hdu, then swap it with the to-be-removed hdu
+    self.data.push(Some(hdu));
+    if slotnr >= self.data.len() {
+      None
+    } else {
+      // this panics if slotnr is oob, which we checked so no panic should be
+      // possible
+      self.data.swap_remove(slotnr)
+    }
+  }
+
   /// Cleans up unused HDU slots in the Fits struct. This operation does not
   /// preserve the order of the HDU's in the Fits file!
   pub fn clean(&mut self) {
