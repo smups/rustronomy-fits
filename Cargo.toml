@@ -49,5 +49,5 @@ indexmap = "1"
 rustronomy-core = "0.4.2"
 
 [dev-dependencies]
-dirs = "4"
+dirs = "5"
 progressing = "3"
