@@ -19,6 +19,10 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
+/*
+  This file is the "entry point" for the user-facing API
+*/
+
 //! The `Fits` struct represents a FITS file containing (multiple) Header Data
 //! Units (HDU's). Each HDU is decoded as a Rustronomy universal data container.
 //! A `Fits` struct can be turned into a `Vec<HDU>` and vice-versa.
@@ -47,51 +51,12 @@
 //! All FITS arrays are mapped to NDArrays of the appropriate type, conserving
 //! FITS's column-major layout.
 
-use std::{error::Error, fmt::Display, path::Path};
-
-use rustronomy_core::universal_containers::*;
-
-use crate::{api::hdu::Hdu, intern};
+use crate::api::hdu::Hdu;
 
 #[derive(Debug)]
+/// User-facing struct representing a FITS file
 pub struct Fits {
-  inherited_tags: Option<meta_only::MetaOnly>,
-  data: Vec<Hdu>,
+  data: Vec<Option<Hdu>>,
 }
 
-impl Fits {
-  pub fn read(path: &Path) -> Result<Self, Box<dyn Error>> {
-    //(1) Try to create FITS reader from path
-    let mut reader = intern::FitsFileReader::new(path)?;
-
-    //(2) Read primary HDU
-    let hdu_prim = intern::read_hdu(&mut reader)?;
-
-    //(2a) If the primary HDU has the extended kw, we should save its tags
-    //to be inherited by the next HDU's
-
-    todo!()
-  }
-  pub fn write(self, path: &Path) -> Result<(), Box<dyn Error>> {
-    todo!()
-  }
-  pub fn empty() -> Self {
-    Fits { inherited_tags: None, data: Vec::new() }
-  }
-
-  pub fn set_global_tags(&mut self, global_meta: meta_only::MetaOnly) {
-    self.inherited_tags = Some(global_meta);
-  }
-}
-
-impl From<Vec<Hdu>> for Fits {
-  fn from(data: Vec<Hdu>) -> Self {
-    Fits { inherited_tags: None, data }
-  }
-}
-
-impl Display for Fits {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    todo!()
-  }
-}
+//TODO: impl display for Fits
