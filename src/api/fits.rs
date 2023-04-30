@@ -59,4 +59,12 @@ pub struct Fits {
   data: Vec<Option<Hdu>>,
 }
 
+impl Fits {
+  /// Returns the HDU at the specified slot number. If the slot number is
+  /// unoccupied, None is returned.
+  pub fn remove_hdu(&mut self, slotnr: usize) -> Option<Hdu> {
+    Some(std::mem::take(self.data.get_mut(idx)?))
+  }
+}
+
 //TODO: impl display for Fits
