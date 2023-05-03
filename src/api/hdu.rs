@@ -78,7 +78,20 @@ pub struct Hdu {
 }
 
 impl Hdu {
-  
+  /// Returns new Hdu with no metadata and `data` as data component.
+  pub fn new(data: impl Into<HduData>) -> Self {
+    Hdu { meta: None, data: Some(data.into()) }
+  }
+
+  /// Constructs Hdu from HduData and MetaOnly components
+  pub fn from_parts(data: HduData, meta: MetaOnly) -> Self {
+    Hdu { meta: Some(meta), data: Some(data) }
+  }
+
+  /// Deconstructs Hdu into HduData and MetaOnly components
+  pub fn to_parts(self) -> (HduData, MetaOnly) {
+    (self.data, self.meta)
+  }
 }
 
 #[derive(Debug, Clone)]
