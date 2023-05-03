@@ -53,39 +53,39 @@
 
 use std::fmt::{Display, Formatter};
 
-use rustronomy_core::universal_containers::*;
+use rustronomy_core::universal_containers::{MetaOnly, Table};
+use ndarray as nd;
 
-#[derive(Debug, Clone)]
-/// This struct represents the Header Data Unit (HDU) as described by the FITS
-/// standard. See module-level documentation for details and examples.
-pub enum Hdu {
-  NoData(meta_only::MetaOnly),
-  Array(TypedArray),
+#[derive(Debug, Clone, PartialEq)]
+enum HduData {
+  //Array types allowed by the FITS standard
+  ArrayU8(nd::ArrayD<u8>),
+  ArrayI16(nd::ArrayD<i16>),
+  ArrayI32(nd::ArrayD<i32>),
+  ArrayI64(nd::ArrayD<i64>),
+  ArrayF32(nd::ArrayD<f32>),
+  ArrayF64(nd::ArrayD<f64>),
+  //(binary) tables
   Table(Table),
 }
 
-impl Hdu {
-  /// Create a Header Data Unit (HDU) containing no data and only metadata.
-  pub fn empty(metadata: meta_only::MetaOnly) -> Self {
-    Self::NoData(metadata)
-  }
+#[derive(Debug, Clone, PartialEq, Default)]
+/// This struct represents the Header Data Unit (HDU) as described by the FITS
+/// standard. See module-level documentation for details and examples.
+pub struct Hdu {
+  meta: Option<MetaOnly>,
+  data: Option<HduData>
+}
 
-  /// Clones the metadata of the underlying Header Data Unit (HDU) and returns it
-  /// as the type `meta_only::MetaOnly`.
-  pub fn clone_meta(&self) -> meta_only::MetaOnly {
-    use Hdu::*;
-    match self {
-      NoData(meta) => meta.clone(),
-      Table(tab) => tab.clone_metadata(),
-      Array(arr) => arr.clone_meta(),
-    }
-  }
+impl Hdu {
+  
 }
 
 #[derive(Debug, Clone)]
 pub enum FromHduErr {
   ArrayTypeErr { tried_into_type: &'static str, actual_type: &'static str },
-  VaraintErr { correct_variant: &'static str },
+  VaraintErr { wrong_variant: String, correct_variant: &'static str },
+  NoDataErr
 }
 
 impl Display for FromHduErr {
@@ -96,135 +96,92 @@ impl Display for FromHduErr {
       ArrayTypeErr { tried_into_type, actual_type } => {
         write!(f, "Expected DataArray<{tried_into_type}>, found DataArray<{actual_type}>")
       }
-      VaraintErr { correct_variant } => {
-        write!(f, "Hdu contains invalid variant, expected to find Hdu::{correct_variant}")
-      }
+      VaraintErr { wrong_variant, correct_variant } => {
+        write!(f, "HDU contains invalid variant Hdu::{wrong_variant}, expected to find Hdu::{correct_variant}")
+      },
+      NoDataErr => write!(f, "HDU does not contain data")
     }
   }
 }
 impl std::error::Error for FromHduErr {}
 
-impl From<Table> for Hdu {
-  fn from(data: Table) -> Self {
-    Self::Table(data)
+/*
+  From implementations to create meta-only hdu's
+*/
+
+impl From<MetaOnly> for Hdu {
+  fn from(value: MetaOnly) -> Self {
+    Self { meta: Some(value), data: None }
   }
 }
+
+impl From<Table> for Hdu {
+  fn from(data: Table) -> Self {
+    Self { meta: None, data: Some(HduData::Table(data)) }
+  }
+}
+
+//Implements From<array> for HduData for all the different kinds of arrays supported
+//by the fits format
+macro_rules! into_hdu_data {
+  ($($variant:ident, $type:ty),*) => {
+    $(
+      impl<D: nd::Dimension> From<nd::Array<$type, D>> for HduData {
+        fn from(data: nd::Array<$type>) -> Self {
+          Self::$variant(data)
+        }
+      }
+      impl From<nd::ArrayD<$type>> for HduData {
+        fn from(data: nd::Array<$type>) -> Self {
+          Self::$variant(data)
+        }
+      }  
+    )*
+  };
+}
+into_hdu_data!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64);
+
+/*
+  TryFrom implementations to turn Hdu's into other types
+*/
 
 impl TryFrom<Hdu> for Table {
   type Error = FromHduErr;
 
   fn try_from(value: Hdu) -> Result<Self, Self::Error> {
-    if let Hdu::Table(table) = value {
-      return Ok(table);
-    } else {
-      return Err(FromHduErr::VaraintErr { correct_variant: "Table" });
+    match value {
+      Hdu { meta, data: Some(HduData::Table(table)) } => Ok(table),
+      Hdu { meta, data: Some(other) } => Err(FromHduErr::VaraintErr{
+        wrong_variant: format!("{other:?}"),
+        correct_variant: "Table"
+      }),
+      _ => Err(FromHduErr::NoDataErr)
     }
   }
 }
 
-impl<T> From<DataArray<T>> for Hdu
-where
-  DataArray<T>: Into<TypedArray>,
-  T: num_traits::Num,
-{
-  fn from(data: DataArray<T>) -> Self {
-    Self::Array(data.into())
-  }
-}
-
-impl<T> TryFrom<Hdu> for DataArray<T>
-where
-  DataArray<T>: TryFrom<TypedArray>,
-  <DataArray<T> as TryFrom<TypedArray>>::Error: Into<FromHduErr>,
-  T: num_traits::Num,
-{
-  type Error = FromHduErr;
-
-  fn try_from(value: Hdu) -> Result<Self, FromHduErr> {
-    if let Hdu::Array(data) = value {
-      return match data.try_into() {
-        Ok(good) => Ok(good),
-        Err(err) => Err(err.into()),
-      };
-    } else {
-      return Err(FromHduErr::VaraintErr { correct_variant: "Array" });
-    }
-  }
-}
-
-#[derive(Debug, Clone)]
-/// This enum represents all `DataArray<T>`'s that a valid FITS file can contain.
-/// As of the FITS standard v4.0, the valid types for `T` are: `u8`, `i16`, `i32`,
-/// `i64`, `f32` and `f64`. For those types, `TypedArray` implements
-/// `From<DataArray<T>>` and `DataArray<T>` implements `TryFrom<TypedArray>`.
-pub enum TypedArray {
-  U8(DataArray<u8>),
-  I16(DataArray<i16>),
-  I32(DataArray<i32>),
-  I64(DataArray<i64>),
-  F32(DataArray<f32>),
-  F64(DataArray<f64>),
-}
-
-impl TypedArray {
-  pub(crate) fn clone_meta(&self) -> meta_only::MetaOnly {
-    use TypedArray::*;
-    match self {
-      U8(arr) => arr.clone_metadata(),
-      I16(arr) => arr.clone_metadata(),
-      I32(arr) => arr.clone_metadata(),
-      I64(arr) => arr.clone_metadata(),
-      F32(arr) => arr.clone_metadata(),
-      F64(arr) => arr.clone_metadata(),
-    }
-  }
-}
-
-macro_rules! try_into_generic_array {
+//Implements TryFrom<array> for HduData for all the different kinds of arrays supported
+//by the fits format
+macro_rules! try_from_hdu {
   ($($variant:ident, $type:ty),*) => {
-    $(impl TryFrom<TypedArray> for DataArray<$type> {
+    $(impl<D: nd::Dimension> TryFrom<Hdu> for nd::Array<$type, D> {
       type Error = FromHduErr;
 
-      fn try_from(data: TypedArray) -> Result<DataArray<$type>, Self::Error> {
-
-        fn helper<T>(_:&T) -> &'static str {std::any::type_name::<T>()}
-
-        if let TypedArray::$variant(data) = data {
-          return Ok(data)
-        } else {
-          return Err(FromHduErr::ArrayTypeErr {
+      fn try_from(hdu: Hdu) -> Result<Self, Self::Error> {
+        match hdu.data {
+          Some(HduData::$variant(array)) => Ok(array),
+          Some(other) => Err(FromHduErr::ArrayTypeErr{
             tried_into_type: std::any::type_name::<$type>(),
-            actual_type: helper(&data)
-          })
+            actual_type: (other as &dyn std::any::Any).type_name()
+          }),
+          _ => Err(FromHduErr::NoDataErr)
         }
       }
     })*
   };
 }
-try_into_generic_array!(U8, u8, I16, i16, I32, i32, I64, i64, F32, f32, F64, f64);
-
-macro_rules! into_typed_array {
-  ($($variant:ident, $type:ty),*) => {
-    $(impl From<DataArray<$type>> for TypedArray {
-      fn from(data: DataArray<$type>) -> Self {
-        Self::$variant(data)
-      }
-    })*
-  };
-}
-into_typed_array!(U8, u8, I16, i16, I32, i32, I64, i64, F32, f32, F64, f64);
+try_from_hdu!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                 UNIT TESTS                                 //
 ////////////////////////////////////////////////////////////////////////////////
-
-#[test]
-fn test_impl_hdu_clone_meta() {
-  use rustronomy_core::universal_containers::*;
-  let exp = 1234;
-  let mut mock_meta = meta_only::MetaOnly::new();
-  mock_meta.insert_exposure_time(exp).expect("could not insert mock tag");
-
-  let hdu = Hdu::NoData(mock_meta);
-  assert_eq!(exp, hdu.clone_meta().remove_exposure_time().unwrap());
-}
