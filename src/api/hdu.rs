@@ -103,7 +103,7 @@ impl Hdu {
 
 #[derive(Debug, Clone)]
 pub enum FromHduErr {
-  ArrayTypeErr { tried_into_type: &'static str, actual_type: &'static str },
+  ArrayTypeErr { tried_into_type: &'static str, actual_type: String },
   VaraintErr { wrong_variant: String, correct_variant: &'static str },
   NoDataErr
 }
@@ -190,15 +190,15 @@ impl TryFrom<Hdu> for Table {
 //by the fits format
 macro_rules! try_from_hdu {
   ($($variant:ident, $type:ty),*) => {
-    $(impl<D: nd::Dimension> TryFrom<Hdu> for nd::Array<$type, D> {
+    $(impl TryFrom<Hdu> for nd::ArrayD<$type> {
       type Error = FromHduErr;
 
       fn try_from(hdu: Hdu) -> Result<Self, Self::Error> {
         match hdu.data {
-          Some(HduData::$variant(array)) => Ok(array),
-          Some(other) => Err(FromHduErr::ArrayTypeErr{
+          Some(HduData::$variant(array)) => Ok(array.into_dyn()),
+          Some(ref other) => Err(FromHduErr::ArrayTypeErr{
             tried_into_type: std::any::type_name::<$type>(),
-            actual_type: (other as &dyn std::any::Any).type_name()
+            actual_type: format!("{other:?}")
           }),
           _ => Err(FromHduErr::NoDataErr)
         }
