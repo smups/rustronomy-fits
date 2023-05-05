@@ -56,7 +56,7 @@ use std::fmt::{Display, Formatter};
 use rustronomy_core::universal_containers::{MetaOnly, Table};
 use ndarray as nd;
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Default)]
 /// This struct represents the Header Data Unit (HDU) as described by the FITS
 /// standard. See module-level documentation for details and examples.
 pub struct Hdu {
@@ -71,7 +71,7 @@ impl Hdu {
   }
 
   pub fn get_data<T: TryFrom<Hdu>>(&self) -> Result<&T, <T as TryFrom<Hdu>>::Error> {
-    &self.data.ok_or(0)?.try_into()
+    &self.data.ok_or(0).try_into().as_deref()
   }
 
   /// Constructs Hdu from HduData and MetaOnly components
