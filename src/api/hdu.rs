@@ -56,19 +56,6 @@ use std::fmt::{Display, Formatter};
 use rustronomy_core::universal_containers::{MetaOnly, Table};
 use ndarray as nd;
 
-#[derive(Debug, Clone, PartialEq)]
-enum HduData {
-  //Array types allowed by the FITS standard
-  ArrayU8(nd::ArrayD<u8>),
-  ArrayI16(nd::ArrayD<i16>),
-  ArrayI32(nd::ArrayD<i32>),
-  ArrayI64(nd::ArrayD<i64>),
-  ArrayF32(nd::ArrayD<f32>),
-  ArrayF64(nd::ArrayD<f64>),
-  //(binary) tables
-  Table(Table),
-}
-
 #[derive(Debug, Clone, PartialEq, Default)]
 /// This struct represents the Header Data Unit (HDU) as described by the FITS
 /// standard. See module-level documentation for details and examples.
@@ -83,13 +70,17 @@ impl Hdu {
     Hdu { meta: None, data: Some(data.into()) }
   }
 
+  pub fn get_data<T: TryFrom<Hdu>>(&self) -> Result<&T, <T as TryFrom<Hdu>>::Error> {
+    &self.data.ok_or(0)?.try_into()
+  }
+
   /// Constructs Hdu from HduData and MetaOnly components
   pub fn from_parts(data: HduData, meta: MetaOnly) -> Self {
     Hdu { meta: Some(meta), data: Some(data) }
   }
 
-  /// Deconstructs Hdu into HduData and MetaOnly components
-  pub fn to_parts(self) -> (HduData, MetaOnly) {
+  /// Deconstructs Hdu into HduData and MetaOnly components;
+  pub fn to_parts(self) -> (Option<HduData>, Option<MetaOnly>) {
     (self.data, self.meta)
   }
 }
@@ -118,6 +109,19 @@ impl Display for FromHduErr {
 }
 impl std::error::Error for FromHduErr {}
 
+#[derive(Debug, Clone, PartialEq)]
+enum HduData {
+  //Array types allowed by the FITS standard
+  ArrayU8(nd::ArrayD<u8>),
+  ArrayI16(nd::ArrayD<i16>),
+  ArrayI32(nd::ArrayD<i32>),
+  ArrayI64(nd::ArrayD<i64>),
+  ArrayF32(nd::ArrayD<f32>),
+  ArrayF64(nd::ArrayD<f64>),
+  //(binary) tables
+  Table(Table),
+}
+
 /*
   From implementations to create meta-only hdu's
 */
@@ -138,18 +142,11 @@ impl From<Table> for Hdu {
 //by the fits format
 macro_rules! into_hdu_data {
   ($($variant:ident, $type:ty),*) => {
-    $(
-      impl<D: nd::Dimension> From<nd::Array<$type, D>> for HduData {
-        fn from(data: nd::Array<$type>) -> Self {
-          Self::$variant(data)
-        }
+    $(impl<D: nd::Dimension> From<nd::Array<$type, D>> for HduData {
+      fn from(data: nd::Array<$type, D>) -> Self {
+        Self::$variant(data.into_dyn())
       }
-      impl From<nd::ArrayD<$type>> for HduData {
-        fn from(data: nd::Array<$type>) -> Self {
-          Self::$variant(data)
-        }
-      }  
-    )*
+    })*
   };
 }
 into_hdu_data!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64);
@@ -198,3 +195,15 @@ try_from_hdu!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32
 ////////////////////////////////////////////////////////////////////////////////
 //                                 UNIT TESTS                                 //
 ////////////////////////////////////////////////////////////////////////////////
+macro_rules! test_from_impl {
+  ($($type:ty),*) => {
+    $(
+      #[test]
+      fn test_from() {
+        let test_array = nd::Array2::<$type>::zeros((10,10));
+        let hdu_data: HduData = test_array.into();
+      }
+    )*
+  };
+}
+test_from_impl!(u8);
