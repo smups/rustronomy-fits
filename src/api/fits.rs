@@ -64,7 +64,7 @@ impl Fits {
   /// previous HDU stored at the specified slot number will be returned, if one
   /// was present. Does not panic.
   pub fn remove_hdu(&mut self, slotnr: usize) -> Option<Hdu> {
-    Some(std::mem::take(self.data.get_mut(slotnr)?))
+    Some(std::mem::take(self.data.get_mut(slotnr)?.as_mut()?))
   }
 
   /// Swaps HDU entry at slot number with a new hdu, returning the old HDU (if
@@ -72,7 +72,7 @@ impl Fits {
   /// instead. Does not panic.
   pub fn swap_hdu(&mut self, hdu: &Hdu, slotnr: usize) -> Option<Hdu> {
     //First append the new hdu, then swap it with the to-be-removed hdu
-    self.data.push(Some(hdu));
+    self.data.push(Some(hdu.clone()));
     if slotnr >= self.data.len() {
       None
     } else {
@@ -84,12 +84,12 @@ impl Fits {
 
   /// Adds a HDU at a new slot number one higher than the current highest.
   pub fn append_hdu(&mut self, hdu: &Hdu) {
-    self.data.push(Some(hdu))
+    self.data.push(Some(hdu.clone()))
   }
 
   /// Cleans up unused HDU slots in the Fits struct. This operation does not
   /// preserve the order of the HDU's in the Fits file!
-  pub fn clean(&mut self) {
+  pub fn clean(mut self) {
     self.data = self.data.into_iter().filter(|x| x.is_some()).collect();
   }
 }
