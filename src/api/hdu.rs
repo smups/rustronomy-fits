@@ -70,8 +70,24 @@ impl Hdu {
     Hdu { meta: None, data: Some(data.into()) }
   }
 
-  pub fn get_data<T: TryFrom<Hdu>>(&self) -> Result<&T, <T as TryFrom<Hdu>>::Error> {
-    &self.data.ok_or(0).try_into().as_deref()
+  /// Returns reference to data held by this Hdu, if such data is present. If no
+  /// data is present, or the data in the Hdu cannot be converted to the specified
+  /// type, an error will be returned instead. This method does not panic.
+  pub fn get_data<T>(&self) -> Result<&T, FromHduErr>
+  where
+    T: TryFrom<HduData, Error = FromHduErr>
+  {
+    Ok(&self.data.ok_or(FromHduErr::NoDataErr)?.try_into()?)
+  }
+
+  /// Returns reference to data held by this Hdu, if such data is present. If no
+  /// data is present, or the data in the Hdu cannot be converted to the specified
+  /// type, an error will be returned instead. This method does not panic.
+  pub fn get_data_mut<T>(&self) -> Result<&mut T, FromHduErr>
+  where
+    T: TryFrom<HduData, Error = FromHduErr>
+  {
+    Ok(&mut self.data.ok_or(FromHduErr::NoDataErr)?.try_into()?)
   }
 
   /// Constructs Hdu from HduData and MetaOnly components
