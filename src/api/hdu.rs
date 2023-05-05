@@ -109,7 +109,7 @@ impl Display for FromHduErr {
 }
 impl std::error::Error for FromHduErr {}
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 enum HduData {
   //Array types allowed by the FITS standard
   ArrayU8(nd::ArrayD<u8>),
