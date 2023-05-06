@@ -75,19 +75,21 @@ impl Hdu {
   /// type, an error will be returned instead. This method does not panic.
   pub fn get_data<T>(&self) -> Result<&T, FromHduErr>
   where
-    T: TryFrom<HduData, Error = FromHduErr>
+    for<'a> &'a T: TryFrom<&'a HduData, Error = FromHduErr>
   {
-    Ok(&self.data.ok_or(FromHduErr::NoDataErr)?.try_into()?)
+    let &data = &self.data.as_ref().ok_or(FromHduErr::NoDataErr)?;
+    data.try_into()
   }
 
   /// Returns reference to data held by this Hdu, if such data is present. If no
   /// data is present, or the data in the Hdu cannot be converted to the specified
   /// type, an error will be returned instead. This method does not panic.
-  pub fn get_data_mut<T>(&self) -> Result<&mut T, FromHduErr>
+  pub fn get_data_mut<T>(&mut self) -> Result<&mut T, FromHduErr>
   where
-    T: TryFrom<HduData, Error = FromHduErr>
+  for<'a> &'a mut T: TryFrom<&'a mut HduData, Error = FromHduErr>
   {
-    Ok(&mut self.data.ok_or(FromHduErr::NoDataErr)?.try_into()?)
+    let data = (&mut self.data).as_mut().ok_or(FromHduErr::NoDataErr)?;
+    data.try_into()
   }
 
   /// Constructs Hdu from HduData and MetaOnly components
@@ -126,7 +128,7 @@ impl Display for FromHduErr {
 impl std::error::Error for FromHduErr {}
 
 #[derive(Debug, Clone)]
-enum HduData {
+pub enum HduData {
   //Array types allowed by the FITS standard
   ArrayU8(nd::ArrayD<u8>),
   ArrayI16(nd::ArrayD<i16>),
@@ -171,17 +173,16 @@ into_hdu_data!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF3
   TryFrom implementations to turn Hdu's into other types
 */
 
-impl TryFrom<Hdu> for Table {
+impl TryFrom<HduData> for Table {
   type Error = FromHduErr;
 
-  fn try_from(value: Hdu) -> Result<Self, Self::Error> {
-    match value {
-      Hdu { meta, data: Some(HduData::Table(table)) } => Ok(table),
-      Hdu { meta, data: Some(other) } => Err(FromHduErr::VaraintErr{
+  fn try_from(hdudata: HduData) -> Result<Self, Self::Error> {
+    match hdudata {
+      HduData::Table(table) => Ok(table),
+      other => Err(FromHduErr::VaraintErr{
         wrong_variant: format!("{other:?}"),
         correct_variant: "Table"
-      }),
-      _ => Err(FromHduErr::NoDataErr)
+      })
     }
   }
 }
@@ -189,22 +190,37 @@ impl TryFrom<Hdu> for Table {
 //Implements TryFrom<array> for HduData for all the different kinds of arrays supported
 //by the fits format
 macro_rules! try_from_hdu {
-  ($($variant:ident, $type:ty),*) => {
-    $(impl TryFrom<Hdu> for nd::ArrayD<$type> {
+  ($($variant:ident, $type:ty),*) => {$(
+    impl TryFrom<HduData> for nd::ArrayD<$type> {
       type Error = FromHduErr;
 
-      fn try_from(hdu: Hdu) -> Result<Self, Self::Error> {
-        match hdu.data {
-          Some(HduData::$variant(array)) => Ok(array.into_dyn()),
-          Some(ref other) => Err(FromHduErr::ArrayTypeErr{
+      fn try_from(hdudata: HduData) -> Result<Self, Self::Error> {
+        match hdudata {
+          HduData::$variant(array) => Ok(array.into_dyn()),
+          other => Err(FromHduErr::ArrayTypeErr{
             tried_into_type: std::any::type_name::<$type>(),
             actual_type: format!("{other:?}")
           }),
           _ => Err(FromHduErr::NoDataErr)
         }
       }
-    })*
-  };
+    }
+
+    impl<'a> TryFrom<&'a HduData> for nd::ArrayViewD<'a, $type> {
+      type Error = FromHduErr;
+
+      fn try_from(hdudata: &'a HduData) -> Result<Self, Self::Error> {
+        match hdudata {
+          HduData::$variant(ref array) => Ok(array.view()),
+          ref other => Err(FromHduErr::ArrayTypeErr{
+            tried_into_type: std::any::type_name::<$type>(),
+            actual_type: format!("{other:?}")
+          })
+        }
+      }
+    }
+  
+  )*};
 }
 try_from_hdu!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64);
 
