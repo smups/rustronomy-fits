@@ -53,15 +53,15 @@
 
 use std::fmt::{Display, Formatter};
 
-use rustronomy_core::universal_containers::{MetaOnly, Table};
 use ndarray as nd;
+use rustronomy_core::universal_containers::{MetaOnly, Table};
 
 #[derive(Debug, Clone, Default)]
 /// This struct represents the Header Data Unit (HDU) as described by the FITS
 /// standard. See module-level documentation for details and examples.
 pub struct Hdu {
   meta: Option<MetaOnly>,
-  data: Option<HduData>
+  data: Option<HduData>,
 }
 
 impl Hdu {
@@ -75,7 +75,7 @@ impl Hdu {
   /// type, an error will be returned instead. This method does not panic.
   pub fn get_data<T>(&self) -> Result<&T, FromHduErr>
   where
-    for<'a> &'a T: TryFrom<&'a HduData, Error = FromHduErr>
+    for<'a> &'a T: TryFrom<&'a HduData, Error = FromHduErr>,
   {
     let &data = &self.data.as_ref().ok_or(FromHduErr::NoDataErr)?;
     data.try_into()
@@ -86,7 +86,7 @@ impl Hdu {
   /// type, an error will be returned instead. This method does not panic.
   pub fn get_data_mut<T>(&mut self) -> Result<&mut T, FromHduErr>
   where
-  for<'a> &'a mut T: TryFrom<&'a mut HduData, Error = FromHduErr>
+    for<'a> &'a mut T: TryFrom<&'a mut HduData, Error = FromHduErr>,
   {
     let data = (&mut self.data).as_mut().ok_or(FromHduErr::NoDataErr)?;
     data.try_into()
@@ -107,7 +107,7 @@ impl Hdu {
 pub enum FromHduErr {
   ArrayTypeErr { tried_into_type: &'static str, actual_type: String },
   VaraintErr { wrong_variant: String, correct_variant: &'static str },
-  NoDataErr
+  NoDataErr,
 }
 
 impl Display for FromHduErr {
@@ -120,8 +120,8 @@ impl Display for FromHduErr {
       }
       VaraintErr { wrong_variant, correct_variant } => {
         write!(f, "HDU contains invalid variant Hdu::{wrong_variant}, expected to find Hdu::{correct_variant}")
-      },
-      NoDataErr => write!(f, "HDU does not contain data")
+      }
+      NoDataErr => write!(f, "HDU does not contain data"),
     }
   }
 }
@@ -167,7 +167,9 @@ macro_rules! into_hdu_data {
     })*
   };
 }
-into_hdu_data!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64);
+into_hdu_data!(
+  ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64
+);
 
 /*
   TryFrom implementations to turn Hdu's into other types
@@ -179,10 +181,10 @@ impl TryFrom<HduData> for Table {
   fn try_from(hdudata: HduData) -> Result<Self, Self::Error> {
     match hdudata {
       HduData::Table(table) => Ok(table),
-      other => Err(FromHduErr::VaraintErr{
+      other => Err(FromHduErr::VaraintErr {
         wrong_variant: format!("{other:?}"),
-        correct_variant: "Table"
-      })
+        correct_variant: "Table",
+      }),
     }
   }
 }
@@ -219,10 +221,12 @@ macro_rules! try_from_hdu {
         }
       }
     }
-  
+
   )*};
 }
-try_from_hdu!(ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64);
+try_from_hdu!(
+  ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64
+);
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                 UNIT TESTS                                 //

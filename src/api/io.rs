@@ -42,7 +42,7 @@ pub trait FitsReader {
 
   /// Returns the length of the source of the bytes that the reader returns (the
   /// size of the underlying file or stream)
-  /// 
+  ///
   /// # Returns
   /// size of underlying byte source *in bytes*, not in FITS blocks
   fn source_len_bytes(&self) -> usize;

@@ -35,7 +35,7 @@ pub enum FitsReadErr {
   /// The size of the byte target is not a clean multiple of BLOCK_SIZE
   DestNotBlockSized(usize),
   /// Source contained fewer bytes than we requested to read
-  EndOfSource { blcks_remain: usize, blcks_req: usize }
+  EndOfSource { blcks_remain: usize, blcks_req: usize },
 }
 
 impl Display for FitsReadErr {
@@ -83,7 +83,7 @@ pub enum FitsWriteErr {
   /// An IO error occured while writing the FITS file
   IOErr(std::io::Error),
   /// The provided byte source was not a clean multiple of BLOCK_SIZE
-  SourceSize(usize)
+  SourceSize(usize),
 }
 
 impl Display for FitsWriteErr {
