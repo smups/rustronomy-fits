@@ -127,7 +127,13 @@ impl Display for FromHduErr {
 }
 impl std::error::Error for FromHduErr {}
 
+#[non_exhaustive]
 #[derive(Debug, Clone)]
+/// Enum representing the different kinds of data that can be held by a FITS file
+/// (at least those that are currently implemented). `From<Type>` is implemented
+/// for `HduData` for all the data types that can be held in a FITS file.
+/// Similarly, `TryFrom<HduData>` is implemented for all `Type`s that can be held
+/// by `HduData`. 
 pub enum HduData {
   //Array types allowed by the FITS standard
   ArrayU8(nd::ArrayD<u8>),
