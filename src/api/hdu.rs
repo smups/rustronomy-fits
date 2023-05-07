@@ -60,14 +60,14 @@ use rustronomy_core::universal_containers::{MetaOnly, Table};
 /// This struct represents the Header Data Unit (HDU) as described by the FITS
 /// standard. See module-level documentation for details and examples.
 pub struct Hdu {
-  meta: Option<MetaOnly>,
+  meta: MetaOnly,
   data: Option<HduData>,
 }
 
 impl Hdu {
   /// Returns new Hdu with no metadata and `data` as data component.
   pub fn new(data: impl Into<HduData>) -> Self {
-    Hdu { meta: None, data: Some(data.into()) }
+    Hdu { meta: MetaOnly::new(), data: Some(data.into()) }
   }
 
   /// Returns reference to data held by this Hdu, if such data is present. If no
@@ -93,22 +93,22 @@ impl Hdu {
   }
 
   /// Returns a reference to the metadata held by this HDU.
-  pub fn get_meta(&self) -> Option<&MetaOnly> {
-    self.meta.as_ref()
+  pub fn get_meta(&self) -> &MetaOnly {
+    &self.meta
   }
 
   ///Returns a mutable reference to the metadata held by this HDU.
-  pub fn get_meta_mut(&mut self) -> Option<&mut MetaOnly> {
-    self.meta.as_mut()
+  pub fn get_meta_mut(&mut self) -> &mut MetaOnly {
+    &mut self.meta
   }
 
   /// Constructs Hdu from HduData and MetaOnly components
   pub fn from_parts(data: HduData, meta: MetaOnly) -> Self {
-    Hdu { meta: Some(meta), data: Some(data) }
+    Hdu { meta: meta, data: Some(data) }
   }
 
   /// Deconstructs Hdu into HduData and MetaOnly components;
-  pub fn to_parts(self) -> (Option<HduData>, Option<MetaOnly>) {
+  pub fn to_parts(self) -> (Option<HduData>, MetaOnly) {
     (self.data, self.meta)
   }
 }
@@ -178,15 +178,15 @@ impl PartialEq for HduData {
 
 impl From<MetaOnly> for Hdu {
   /// Converts the MetaOnly to an Hdu containing no *data*
-  fn from(value: MetaOnly) -> Self {
-    Self { meta: Some(value), data: None }
+  fn from(meta: MetaOnly) -> Self {
+    Self { meta, data: None }
   }
 }
 
 impl From<Table> for Hdu {
   /// Converts the table to an Hdu without metadata
   fn from(data: Table) -> Self {
-    Self { meta: None, data: Some(HduData::Table(data)) }
+    Self { meta: MetaOnly::new(), data: Some(HduData::Table(data)) }
   }
 }
 
@@ -203,7 +203,7 @@ macro_rules! into_hdu_data {
     impl<D: nd::Dimension> From<nd::Array<$type, D>> for Hdu {
       /// Converts the array to an Hdu without metadata
       fn from(data: nd::Array<$type, D>) -> Self {
-        Hdu { data: Some(data.into()), meta: None }
+        Hdu { data: Some(data.into()), meta: MetaOnly::new() }
       }
     }
   )*};
@@ -301,7 +301,7 @@ macro_rules! test_from_hdu_impl {
       fn $test_name() {
         let test_array = nd::Array2::<$type>::zeros((10,10));
         let converted: Hdu = test_array.clone().into();
-        let correct = Hdu { data: Some(test_array.into()), meta: None };
+        let correct = Hdu { data: Some(test_array.into()), meta: MetaOnly::new() };
         assert_eq!(converted, correct);
       }
     )*
