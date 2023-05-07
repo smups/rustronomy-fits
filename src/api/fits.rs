@@ -56,7 +56,7 @@ use crate::{
     hdu::Hdu,
     io::{FitsReader, FitsWriter},
   },
-  err::io_err::{FitsReadErr, FitsWriteErr},
+  err::io_err::{FitsReadErr, FitsWriteErr}, intern::{FitsFileReader, FitsFileWriter},
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -68,13 +68,13 @@ pub struct Fits {
 impl Fits {
   /// Attempts to create a `Fits` instance from the file at the supplied path.
   pub fn read_from_file(path: &std::path::Path) -> Result<Self, FitsReadErr> {
-    todo!()
+    Self::read_from(&mut FitsFileReader::new(path)?)
   }
 
   /// Attempts to write the current `Fits` instance to the file at the supplied
   /// path.
-  pub fn write_to_file(path: &std::path::Path) -> Result<Self, FitsWriteErr> {
-    todo!()
+  pub fn write_to_file(&self, path: &std::path::Path) -> Result<Self, FitsWriteErr> {
+    self.write_to(&mut FitsFileWriter::new(path)?)
   }
 
   /// Attempts to read a FITS file from the supplied FitsReader.
