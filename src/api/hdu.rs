@@ -146,6 +146,22 @@ pub enum HduData {
   Table(Table),
 }
 
+///Temporary impl of PartialEq for HduData that always returns false for tables
+impl PartialEq for HduData {
+  fn eq(&self, other: &Self) -> bool {
+    match (self, other) {
+      (Self::ArrayU8(l0), Self::ArrayU8(r0)) => l0 == r0,
+      (Self::ArrayI16(l0), Self::ArrayI16(r0)) => l0 == r0,
+      (Self::ArrayI32(l0), Self::ArrayI32(r0)) => l0 == r0,
+      (Self::ArrayI64(l0), Self::ArrayI64(r0)) => l0 == r0,
+      (Self::ArrayF32(l0), Self::ArrayF32(r0)) => l0 == r0,
+      (Self::ArrayF64(l0), Self::ArrayF64(r0)) => l0 == r0,
+      (Self::Table(_), _) => false,
+      _ => false,
+    }
+  }
+}
+
 /*
   From implementations to create meta-only hdu's
 */
