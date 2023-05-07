@@ -133,7 +133,7 @@ impl std::error::Error for FromHduErr {}
 /// (at least those that are currently implemented). `From<Type>` is implemented
 /// for `HduData` for all the data types that can be held in a FITS file.
 /// Similarly, `TryFrom<HduData>` is implemented for all `Type`s that can be held
-/// by `HduData`. 
+/// by `HduData`.
 pub enum HduData {
   //Array types allowed by the FITS standard
   ArrayU8(nd::ArrayD<u8>),
@@ -260,7 +260,7 @@ try_from_hdu!(
 //                                 UNIT TESTS                                 //
 ////////////////////////////////////////////////////////////////////////////////
 macro_rules! test_from_hdudata_impl {
-  ($($type:ty, $test_name:ident, $answer:ident),*) => {
+  ($(($type:ty, $test_name:ident, $answer:ident)),*) => {
     $(
       #[test]
       fn $test_name() {
@@ -273,16 +273,16 @@ macro_rules! test_from_hdudata_impl {
   };
 }
 test_from_hdudata_impl!(
-  u8, from_hdudata_u8, ArrayU8,
-  i16, from_hdudata_i16, ArrayI16,
-  i32, from_hdudata_i32, ArrayI32,
-  i64, from_hdudata_i63, ArrayI64,
-  f32, from_hdudata_f32, ArrayF32,
-  f64, from_hdudata_f64, ArrayF64
+  (u8, from_hdudata_u8, ArrayU8),
+  (i16, from_hdudata_i16, ArrayI16),
+  (i32, from_hdudata_i32, ArrayI32),
+  (i64, from_hdudata_i63, ArrayI64),
+  (f32, from_hdudata_f32, ArrayF32),
+  (f64, from_hdudata_f64, ArrayF64)
 );
 
 macro_rules! test_from_hdu_impl {
-  ($($type:ty, $test_name:ident),*) => {
+  ($(($type:ty, $test_name:ident)),*) => {
     $(
       #[test]
       fn $test_name() {
@@ -294,4 +294,11 @@ macro_rules! test_from_hdu_impl {
     )*
   };
 }
-test_from_hdu_impl!(u8, test_from_u8, i16, test_from_i16, i32, test_from_i32, i64, test_from_i64, f32, test_from_f32, f64, test_from_f64);
+test_from_hdu_impl!(
+  (u8, test_from_u8),
+  (i16, test_from_i16),
+  (i32, test_from_i32),
+  (i64, test_from_i64),
+  (f32, test_from_f32),
+  (f64, test_from_f64)
+);
