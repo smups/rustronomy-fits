@@ -165,13 +165,19 @@ impl From<Table> for Hdu {
 //Implements From<array> for HduData for all the different kinds of arrays supported
 //by the fits format
 macro_rules! into_hdu_data {
-  ($($variant:ident, $type:ty),*) => {
-    $(impl<D: nd::Dimension> From<nd::Array<$type, D>> for HduData {
+  ($($variant:ident, $type:ty),*) => {$(
+    impl<D: nd::Dimension> From<nd::Array<$type, D>> for HduData {
       fn from(data: nd::Array<$type, D>) -> Self {
         Self::$variant(data.into_dyn())
       }
-    })*
-  };
+    }
+
+    impl<D: nd::Dimension> From<nd::Array<$type, D>> for Hdu {
+      fn from(data: nd::Array<$type, D>) -> Self {
+        Hdu { data: Some(data.into()), meta: None }
+      }
+    }
+  )*};
 }
 into_hdu_data!(
   ArrayU8, u8, ArrayI16, i16, ArrayI32, i32, ArrayI64, i64, ArrayF32, f32, ArrayF64, f64
