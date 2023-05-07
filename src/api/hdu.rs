@@ -243,15 +243,31 @@ try_from_hdu!(
 ////////////////////////////////////////////////////////////////////////////////
 //                                 UNIT TESTS                                 //
 ////////////////////////////////////////////////////////////////////////////////
-macro_rules! test_from_impl {
-  ($($type:ty),*) => {
+macro_rules! test_from_hdudata_impl {
+  ($($type:ty, $test_name:ident, $answer:ident),*) => {
     $(
       #[test]
-      fn test_from() {
+      fn $test_name() {
         let test_array = nd::Array2::<$type>::zeros((10,10));
-        let hdu_data: HduData = test_array.into();
+        let converted: HduData = test_array.into();
+        let correct = HduData::$answer(test_array.into_dyn());
+        assert_eq!(converted, correct);
       }
     )*
   };
 }
-test_from_impl!(u8);
+test_from_hdudata_impl!(u8, from_hdudata_u8, ArrayU8);
+
+macro_rules! test_from_hdu_impl {
+  ($($type:ty, $test_name:ident),*) => {
+    $(
+      #[test]
+      fn $test_name() {
+        let test_array = nd::Array2::<$type>::zeros((10,10));
+        let correct = Hdu { data: Some(test_array.clone().into_dyn()), meta: None };
+        assert_eq!(test_array.into(), correct);
+      }
+    )*
+  };
+}
+test_from_hdu_impl!(u8, test_from_u8, i16, test_from_i16, i32, test_from_i32, i64, test_from_i64, f32, test_from_f32, f64, test_from_f64);
