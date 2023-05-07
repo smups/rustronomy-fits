@@ -167,12 +167,14 @@ impl PartialEq for HduData {
 */
 
 impl From<MetaOnly> for Hdu {
+  /// Converts the MetaOnly to an Hdu containing no *data*
   fn from(value: MetaOnly) -> Self {
     Self { meta: Some(value), data: None }
   }
 }
 
 impl From<Table> for Hdu {
+  /// Converts the table to an Hdu without metadata
   fn from(data: Table) -> Self {
     Self { meta: None, data: Some(HduData::Table(data)) }
   }
@@ -189,6 +191,7 @@ macro_rules! into_hdu_data {
     }
 
     impl<D: nd::Dimension> From<nd::Array<$type, D>> for Hdu {
+      /// Converts the array to an Hdu without metadata
       fn from(data: nd::Array<$type, D>) -> Self {
         Hdu { data: Some(data.into()), meta: None }
       }
