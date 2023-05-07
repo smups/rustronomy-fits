@@ -51,7 +51,13 @@
 //! All FITS arrays are mapped to NDArrays of the appropriate type, conserving
 //! FITS's column-major layout.
 
-use crate::{api::{hdu::Hdu, io::{FitsReader, FitsWriter}}, err::io_err::{FitsReadErr, FitsWriteErr}};
+use crate::{
+  api::{
+    hdu::Hdu,
+    io::{FitsReader, FitsWriter},
+  },
+  err::io_err::{FitsReadErr, FitsWriteErr},
+};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 /// User-facing struct representing a FITS file
@@ -60,7 +66,6 @@ pub struct Fits {
 }
 
 impl Fits {
-
   /// Attempts to create a `Fits` instance from the file at the supplied path.
   pub fn read_from_file(path: &std::path::Path) -> Result<Self, FitsReadErr> {
     todo!()
