@@ -53,7 +53,7 @@
 
 use crate::{api::{hdu::Hdu, io::{FitsReader, FitsWriter}}, err::io_err::{FitsReadErr, FitsWriteErr}};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 /// User-facing struct representing a FITS file
 pub struct Fits {
   data: Vec<Option<Hdu>>,
