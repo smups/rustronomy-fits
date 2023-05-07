@@ -54,7 +54,7 @@
 use std::fmt::{Display, Formatter};
 
 use ndarray as nd;
-use rustronomy_core::universal_containers::{MetaOnly, Table};
+use rustronomy_core::{universal_containers::{MetaOnly, Table}, prelude::MetaContainer};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 /// This struct represents the Header Data Unit (HDU) as described by the FITS
@@ -110,6 +110,60 @@ impl Hdu {
   /// Deconstructs Hdu into HduData and MetaOnly components;
   pub fn to_parts(self) -> (Option<HduData>, MetaOnly) {
     (self.data, self.meta)
+  }
+}
+
+impl MetaContainer for Hdu {
+  fn insert_tag<T: rustronomy_core::prelude::MetaTag + Clone>(&mut self, tag: &T) -> Option<T> {
+    self.meta.insert_tag(tag)
+  }
+
+  fn contains_tag<T: rustronomy_core::prelude::MetaTag + Clone>(&self) -> bool {
+    self.meta.contains_tag::<T>()
+  }
+
+  fn contains_type_id(&self, type_id: &std::any::TypeId) -> bool {
+    self.meta.contains_type_id(type_id)
+  }
+
+  fn get_tag<T: rustronomy_core::prelude::MetaTag + Clone>(&self) -> Option<&T> {
+    self.meta.get_tag::<T>()
+  }
+
+  fn get_tag_mut<T: rustronomy_core::prelude::MetaTag + Clone>(&mut self) -> Option<&mut T> {
+    self.meta.get_tag_mut::<T>()
+  }
+
+  fn remove_tag<T: rustronomy_core::prelude::MetaTag + Clone>(&mut self) -> Option<T> {
+    self.meta.remove_tag::<T>()
+  }
+
+  fn has_typed_metadata(&self) -> bool {
+    self.meta.has_typed_metadata()
+  }
+
+  fn insert_string_tag(&mut self, key: &str, value: &str) -> Option<String> {
+    self.meta.insert_string_tag(key, value)
+  }
+
+  fn contains_string_tag(&self, key: &str) -> bool {
+    self.meta.contains_string_tag(key)
+  }
+
+  fn get_string_tag(&self, key: &str) -> Option<&str> {
+    self.meta.get_string_tag(key)
+  }
+
+  fn get_string_tag_mut(&mut self, key: &str) -> Option<&mut String> {
+    self.meta.get_string_tag_mut(key)
+  }
+
+  fn remove_string_tag(&mut self, key: &str) -> Option<String> {
+    self.meta.remove_string_tag(key)
+  }
+
+  fn has_string_metadata(&self) -> bool {
+    self.meta.has_string_metadata()
   }
 }
 
