@@ -56,7 +56,7 @@ use std::fmt::{Display, Formatter};
 use ndarray as nd;
 use rustronomy_core::universal_containers::{MetaOnly, Table};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 /// This struct represents the Header Data Unit (HDU) as described by the FITS
 /// standard. See module-level documentation for details and examples.
 pub struct Hdu {
@@ -265,14 +265,21 @@ macro_rules! test_from_hdudata_impl {
       #[test]
       fn $test_name() {
         let test_array = nd::Array2::<$type>::zeros((10,10));
-        let converted: HduData = test_array.into();
+        let converted: HduData = test_array.clone().into();
         let correct = HduData::$answer(test_array.into_dyn());
         assert_eq!(converted, correct);
       }
     )*
   };
 }
-test_from_hdudata_impl!(u8, from_hdudata_u8, ArrayU8);
+test_from_hdudata_impl!(
+  u8, from_hdudata_u8, ArrayU8,
+  i16, from_hdudata_i16, ArrayI16,
+  i32, from_hdudata_i32, ArrayI32,
+  i64, from_hdudata_i63, ArrayI64,
+  f32, from_hdudata_f32, ArrayF32,
+  f64, from_hdudata_f64, ArrayF64
+);
 
 macro_rules! test_from_hdu_impl {
   ($($type:ty, $test_name:ident),*) => {
@@ -280,8 +287,9 @@ macro_rules! test_from_hdu_impl {
       #[test]
       fn $test_name() {
         let test_array = nd::Array2::<$type>::zeros((10,10));
-        let correct = Hdu { data: Some(test_array.clone().into_dyn()), meta: None };
-        assert_eq!(test_array.into(), correct);
+        let converted: Hdu = test_array.clone().into();
+        let correct = Hdu { data: Some(test_array.into()), meta: None };
+        assert_eq!(converted, correct);
       }
     )*
   };
