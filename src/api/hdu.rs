@@ -92,6 +92,16 @@ impl Hdu {
     data.try_into()
   }
 
+  /// Returns a reference to the metadata held by this HDU.
+  pub fn get_meta(&self) -> Option<&MetaOnly> {
+    self.meta.as_ref()
+  }
+
+  ///Returns a mutable reference to the metadata held by this HDU.
+  pub fn get_meta_mut(&mut self) -> Option<&mut MetaOnly> {
+    self.meta.as_mut()
+  }
+
   /// Constructs Hdu from HduData and MetaOnly components
   pub fn from_parts(data: HduData, meta: MetaOnly) -> Self {
     Hdu { meta: Some(meta), data: Some(data) }
