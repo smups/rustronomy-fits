@@ -369,3 +369,33 @@ test_from_hdu_impl!(
   (f32, test_from_f32),
   (f64, test_from_f64)
 );
+
+macro_rules! test_tryfrom_hdudata_impl {
+  ($(($type:ty, $test_name_valid:ident, $test_name_invalid:ident, $answer:ident)),*) => {
+    $(
+      #[test]
+      fn $test_name_valid() {
+        let test_array = nd::Array2::<$type>::zeros((10,10)).into_dyn();
+        let test_hdudata: HduData = test_array.clone().into();
+        let converted: nd::ArrayD::<$type> = test_hdudata.try_into().unwrap();
+        assert_eq!(test_array, converted);
+      }
+
+      #[test]
+      #[should_panic]
+      fn $test_name_invalid() {
+        let test_array = nd::Array2::<$type>::zeros((10,10)).into_dyn();
+        let test_hdudata: HduData = test_array.clone().into();
+        let _: Table = test_hdudata.try_into().unwrap();
+      }
+    )*
+  };
+}
+test_tryfrom_hdudata_impl!(
+  (u8, tryfrom_hdudata_u8, tryfrom_hdudata_u8_inv, ArrayU8),
+  (i16, tryfrom_hdudata_i16, tryfrom_hdudata_i16_inv, ArrayI16),
+  (i32, tryfrom_hdudata_i32, tryfrom_hdudata_i32_inv, ArrayI32),
+  (i64, tryfrom_hdudata_i64, tryfrom_hdudata_i64_inv, ArrayI64),
+  (f32, tryfrom_hdudata_f32, tryfrom_hdudata_f32_inv, ArrayF32),
+  (f64, tryfrom_hdudata_f64, tryfrom_hdudata_f64_inv, ArrayF64)
+);
