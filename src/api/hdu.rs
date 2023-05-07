@@ -54,7 +54,10 @@
 use std::fmt::{Display, Formatter};
 
 use ndarray as nd;
-use rustronomy_core::{universal_containers::{MetaOnly, Table}, prelude::MetaContainer};
+use rustronomy_core::{
+  prelude::MetaContainer,
+  universal_containers::{MetaOnly, Table},
+};
 
 #[derive(Debug, Clone, Default, PartialEq)]
 /// This struct represents the Header Data Unit (HDU) as described by the FITS
