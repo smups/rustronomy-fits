@@ -51,7 +51,7 @@
 //! All FITS arrays are mapped to NDArrays of the appropriate type, conserving
 //! FITS's column-major layout.
 
-use crate::api::hdu::Hdu;
+use crate::{api::{hdu::Hdu, io::{FitsReader, FitsWriter}}, err::io_err::{FitsReadErr, FitsWriteErr}};
 
 #[derive(Debug, Default)]
 /// User-facing struct representing a FITS file
@@ -60,6 +60,28 @@ pub struct Fits {
 }
 
 impl Fits {
+
+  /// Attempts to create a `Fits` instance from the file at the supplied path.
+  pub fn read_from_file(path: &std::path::Path) -> Result<Self, FitsReadErr> {
+    todo!()
+  }
+
+  /// Attempts to write the current `Fits` instance to the file at the supplied
+  /// path.
+  pub fn write_to_file(path: &std::path::Path) -> Result<Self, FitsWriteErr> {
+    todo!()
+  }
+
+  /// Attempts to read a FITS file from the supplied FitsReader.
+  pub fn read_from(reader: &mut impl FitsReader) -> Result<Self, FitsReadErr> {
+    todo!()
+  }
+
+  /// Attempts to write this FITS object using the supplied FitsWriter.
+  pub fn write_to(&self, writer: &mut impl FitsWriter) -> Result<Self, FitsWriteErr> {
+    todo!()
+  }
+
   /// Returns the HDU at the specified slot number, leaving it unoccupied. The
   /// previous HDU stored at the specified slot number will be returned, if one
   /// was present. Does not panic.
