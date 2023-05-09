@@ -27,7 +27,7 @@ type Error = crate::err::io_err::FitsReadErr;
 #[derive(Debug, PartialEq, Eq)]
 pub struct TestIo<'a> {
   data: &'a [u8],
-  cursor: usize
+  cursor: usize,
 }
 
 impl<'a> TestIo<'a> {
@@ -45,13 +45,13 @@ impl<'a> TestIo<'a> {
 
 #[test]
 fn test_testio_new() {
-  let data = &[1,2,3,4,5];
+  let data = &[1, 2, 3, 4, 5];
   assert_eq!(TestIo::new(data), TestIo { data, cursor: 0 });
 }
 
 #[test]
 fn test_testio_clone() {
-  let x = TestIo { data: &[1,2,3,4,5], cursor: 12 };
+  let x = TestIo { data: &[1, 2, 3, 4, 5], cursor: 12 };
   let y = x.clone();
   assert_ne!(x, y);
   assert_eq!(x.data, y.data);
@@ -71,7 +71,7 @@ impl<'a> FitsReader for TestIo<'a> {
     let blcks_req = buffer.len() / BLOCK_SIZE;
     let blcks_remain = (self.data.len() / BLOCK_SIZE) - self.cursor;
     if blcks_remain < blcks_req {
-      Err(Error::EndOfSource{ blcks_remain, blcks_req })?
+      Err(Error::EndOfSource { blcks_remain, blcks_req })?
     }
 
     //(4) Read the blocks from cursor to cursor + blcks_req into the buffer
@@ -81,7 +81,7 @@ impl<'a> FitsReader for TestIo<'a> {
 
     //(5) Update the cursor
     self.cursor += blcks_req;
-    
+
     //(R) the amount of blocks read
     Ok(blcks_req)
   }
@@ -100,7 +100,10 @@ fn test_testio_fitsreader_dest_not_block_sized() {
 #[test]
 fn test_testio_fitsreader_source_st_dest() {
   let mut rdr = TestIo::new(&[0; crate::BLOCK_SIZE]);
-  assert!(matches!(rdr.read_blocks_into(&mut [0; 2*crate::BLOCK_SIZE]), Err(Error::EndOfSource { .. })));
+  assert!(matches!(
+    rdr.read_blocks_into(&mut [0; 2 * crate::BLOCK_SIZE]),
+    Err(Error::EndOfSource { .. })
+  ));
 }
 
 #[test]
@@ -109,7 +112,10 @@ fn test_testio_fitsreader_read_too_much() {
   //This read should work
   rdr.read_blocks_into(&mut [0; crate::BLOCK_SIZE]).unwrap();
   //This one should not
-  assert!(matches!(rdr.read_blocks_into(&mut [0; 2*crate::BLOCK_SIZE]), Err(Error::EndOfSource { .. })));
+  assert!(matches!(
+    rdr.read_blocks_into(&mut [0; 2 * crate::BLOCK_SIZE]),
+    Err(Error::EndOfSource { .. })
+  ));
 }
 
 #[test]
@@ -126,18 +132,27 @@ fn test_testio_fitsreader_read() {
 #[cfg(test)]
 /// Test FITS files, courtesy of NASA
 pub mod mock_data {
-  pub const ASTRO_UIT_BYTES: &'static [u8; 538560] = include_bytes!("../../resources/Astro_UIT.fits");
+  pub const ASTRO_UIT_BYTES: &'static [u8; 538560] =
+    include_bytes!("../../resources/Astro_UIT.fits");
   pub const EUVE_BYTES: &'static [u8; 4291200] = include_bytes!("../../resources/EUVE.fits");
   pub const IUE_LWP_BYTES: &'static [u8; 48960] = include_bytes!("../../resources/IUE_LWP.fits");
-  pub const RANDOM_GROUPS_BYTES: &'static [u8; 596160] = include_bytes!("../../resources/RandomGroups.fits");
+  pub const RANDOM_GROUPS_BYTES: &'static [u8; 596160] =
+    include_bytes!("../../resources/RandomGroups.fits");
 
-  pub const HUBBLE_FGS_BYTES: &'static [u8; 2540160] = include_bytes!("../../resources/Hubble_FGS.fits");
-  pub const HUBBLE_FOC_BYTES: &'static [u8; 4219200] = include_bytes!("../../resources/Hubble_FOC.fits");
-  pub const HUBBLE_FOS_BYTES: &'static [u8; 43200] = include_bytes!("../../resources/Hubble_FOS.fits");
-  pub const HUBBLE_HRS_BYTES: &'static [u8; 69120] = include_bytes!("../../resources/Hubble_HRS.fits");
-  pub const HUBBLE_NICMOS_BYTES: &'static [u8; 1198080] = include_bytes!("../../resources/Hubble_NICMOS.fits");
-  pub const HUBBLE_WFPC2_1_BYTES: &'static [u8; 699840] = include_bytes!("../../resources/Hubble_WFPC2_1.fits");
-  pub const HUBBLE_WFPC2_2_BYTES: &'static [u8; 63360] = include_bytes!("../../resources/Hubble_WFPC2_2.fits");
+  pub const HUBBLE_FGS_BYTES: &'static [u8; 2540160] =
+    include_bytes!("../../resources/Hubble_FGS.fits");
+  pub const HUBBLE_FOC_BYTES: &'static [u8; 4219200] =
+    include_bytes!("../../resources/Hubble_FOC.fits");
+  pub const HUBBLE_FOS_BYTES: &'static [u8; 43200] =
+    include_bytes!("../../resources/Hubble_FOS.fits");
+  pub const HUBBLE_HRS_BYTES: &'static [u8; 69120] =
+    include_bytes!("../../resources/Hubble_HRS.fits");
+  pub const HUBBLE_NICMOS_BYTES: &'static [u8; 1198080] =
+    include_bytes!("../../resources/Hubble_NICMOS.fits");
+  pub const HUBBLE_WFPC2_1_BYTES: &'static [u8; 699840] =
+    include_bytes!("../../resources/Hubble_WFPC2_1.fits");
+  pub const HUBBLE_WFPC2_2_BYTES: &'static [u8; 63360] =
+    include_bytes!("../../resources/Hubble_WFPC2_2.fits");
 
   type TestIo = super::TestIo<'static>;
 

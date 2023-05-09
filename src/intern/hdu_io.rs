@@ -21,18 +21,18 @@
 
 use std::error::Error;
 
-use crate::{hdu::Hdu, api::io::*};
+use crate::{api::io::*, hdu::Hdu};
 
 pub fn read_hdu(reader: &mut impl FitsReader) -> Result<Hdu, Box<dyn Error>> {
   //(0) Create a new HDU
   let mut hdu = Hdu::default();
 
   /*(1)
-  * Decode the header. This reads the header part of the Header Data and splits
-  * it into fits_options (parameters required to read the data part of the HDU)
-  * and metadata, which is added to the hdu (this is why hdu has to be passed as
-  * a mutable paramter!)
-  */
+   * Decode the header. This reads the header part of the Header Data and splits
+   * it into fits_options (parameters required to read the data part of the HDU)
+   * and metadata, which is added to the hdu (this is why hdu has to be passed as
+   * a mutable paramter!)
+   */
   let fits_options = super::header_io::read_header(reader, &mut hdu)?;
 
   //(2) Determine the kind of HDU we got

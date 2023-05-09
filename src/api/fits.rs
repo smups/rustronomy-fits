@@ -56,7 +56,8 @@ use crate::{
     hdu::Hdu,
     io::{FitsReader, FitsWriter},
   },
-  err::io_err::{FitsReadErr, FitsWriteErr}, intern::{FitsFileReader, FitsFileWriter},
+  err::io_err::{FitsReadErr, FitsWriteErr},
+  intern::{FitsFileReader, FitsFileWriter},
 };
 
 #[derive(Debug, Default, Clone, PartialEq)]

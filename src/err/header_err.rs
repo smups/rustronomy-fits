@@ -22,7 +22,7 @@
 #[derive(Debug)]
 pub enum HeaderReadErr {
   IoErr(super::io_err::FitsReadErr),
-  InvalidHeader(InvalidHeaderErr)
+  InvalidHeader(InvalidHeaderErr),
 }
 
 impl From<InvalidHeaderErr> for HeaderReadErr {
@@ -41,13 +41,13 @@ impl From<super::io_err::FitsReadErr> for HeaderReadErr {
 pub enum InvalidHeaderErr {
   NoValue { key: &'static str },
   NaxisOob { idx: usize, naxes: u16 },
-  FmtErr { key: &'static str, err: String }
+  FmtErr { key: &'static str, err: String },
 }
 
 impl InvalidHeaderErr {
   pub(crate) fn fmt_err<T>(key: &'static str, err: T) -> Self
   where
-    T: std::fmt::Display + std::error::Error
+    T: std::fmt::Display + std::error::Error,
   {
     Self::FmtErr { key, err: format!("{err}") }
   }

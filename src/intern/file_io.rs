@@ -25,7 +25,7 @@ use std::{
   path::Path,
 };
 
-use crate::{err::io_err::*, api::io::*};
+use crate::{api::io::*, err::io_err::*};
 
 //Get block size from root
 const BLOCK_SIZE: usize = crate::BLOCK_SIZE;

@@ -31,10 +31,10 @@ use header_io::*;
 
 //module structure
 mod file_io;
-mod test_io;
 mod hdu_io;
 mod header_io;
 mod keyword_utils;
+mod test_io;
 
 //re-exports
 pub use file_io::*;

@@ -20,7 +20,13 @@
 */
 use rustronomy_core::prelude::MetaContainer;
 
-use crate::{err::{io_err::FitsReadErr, header_err::{HeaderReadErr, InvalidHeaderErr}}, api::io::*};
+use crate::{
+  api::io::*,
+  err::{
+    header_err::{HeaderReadErr, InvalidHeaderErr},
+    io_err::FitsReadErr,
+  },
+};
 
 use super::FitsOptions;
 
@@ -54,9 +60,9 @@ const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encodin
 /// the supplied metadata container.
 pub fn read_header(
   reader: &mut impl FitsReader,
-  meta: &mut impl MetaContainer
+  meta: &mut impl MetaContainer,
 ) -> Result<Box<FitsOptions>, HeaderReadErr> {
-  //(1) Start with reading all data that is supposed to 
+  //(1) Start with reading all data that is supposed to
   let bytes = read_header_blocks(reader)?;
 
   //(2) Split the raw bytes into Key-Value-Comment triplets
@@ -203,7 +209,7 @@ fn concat<'a>(
       if let Some((_, ref mut current_string)) = extended_string {
         current_string.pop(); //pop the ' character
         current_string.pop(); //pop the & character
-        let new_ext = value.ok_or(InvalidHeaderErr::NoValue{ key: CONTINUE })?;
+        let new_ext = value.ok_or(InvalidHeaderErr::NoValue { key: CONTINUE })?;
         current_string.push_str(&new_ext[1..]); //don´t append leading '
       } else {
         //Interpret this CONTINUE kw as commentary
@@ -280,9 +286,13 @@ fn concat<'a>(
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Helper function that parses NAXIS type keywords
-fn parse_naxis(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), InvalidHeaderErr> {
+fn parse_naxis(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), InvalidHeaderErr> {
   let idx = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
-  let value = value.ok_or(InvalidHeaderErr::NoValue{ key: NAXIS })?;
+  let value = value.ok_or(InvalidHeaderErr::NoValue { key: NAXIS })?;
   if idx == "" {
     options.dim = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
     options.shape = vec![0; options.dim as usize];
@@ -290,8 +300,10 @@ fn parse_naxis(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Res
     let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
     let value: u16 = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
     //index in FITS starts with 1, rust starts with 0 so minus one to convert
-    *options.shape.get_mut(idx - 1).ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? =
-      value;
+    *options
+      .shape
+      .get_mut(idx - 1)
+      .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? = value;
   }
   Ok(())
 }
@@ -301,7 +313,7 @@ fn parse_simple(
   value: Option<&str>,
   options: &mut FitsOptions,
 ) -> Result<(), InvalidHeaderErr> {
-  let conforming = value.ok_or(InvalidHeaderErr::NoValue{ key: SIMPLE })?;
+  let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: SIMPLE })?;
   options.conforming = super::keyword_utils::parse_fits_bool(conforming)
     .map_err(|err| InvalidHeaderErr::FmtErr { key: SIMPLE, err })?;
   Ok(())
@@ -313,7 +325,7 @@ fn parse_bitpix(
   options: &mut FitsOptions,
 ) -> Result<(), InvalidHeaderErr> {
   options.bitpix = value
-    .ok_or(InvalidHeaderErr::NoValue{ key: BITPIX })?
+    .ok_or(InvalidHeaderErr::NoValue { key: BITPIX })?
     .parse()
     .map_err(|err| InvalidHeaderErr::fmt_err(BITPIX, err))?;
   Ok(())
@@ -324,22 +336,25 @@ fn insert_meta_tag(
   value: &str,
   metadata: &mut impl MetaContainer,
 ) -> Result<(), InvalidHeaderErr> {
-  use rustronomy_core::meta::tags as tags;
-  Ok( match key {
+  use rustronomy_core::meta::tags;
+  Ok(match key {
     //Reserved kw describing observations
     DATE_OBS => {
-      metadata.insert_tag(&tags::CreationDate(value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE_OBS, err))?));
+      metadata.insert_tag(&tags::CreationDate(
+        value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE_OBS, err))?,
+      ));
     }
     DATE => {
-      metadata.insert_tag(&tags::LastModified(value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE, err))?));
+      metadata.insert_tag(&tags::LastModified(
+        value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE, err))?,
+      ));
     }
     AUTHOR => {
       metadata.insert_tag(&tags::Author(value.to_string()));
     }
     REFERENC => {
-      let author = if let Some(author) = metadata.get_tag::<tags::Author>() {
-        &author.0
-      } else { "" };
+      let author =
+        if let Some(author) = metadata.get_tag::<tags::Author>() { &author.0 } else { "" };
       metadata.insert_tag(&tags::ReferencePublication::new(value, author));
     }
     TELESCOP => {
@@ -476,7 +491,7 @@ fn invalid_novalue_simple_test() {
   let mut input_options = FitsOptions::new_invalid();
   assert!(matches!(
     parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(InvalidHeaderErr::NoValue {..})
+    Err(InvalidHeaderErr::NoValue { .. })
   ));
 }
 
@@ -506,6 +521,6 @@ fn invalid_novalue_bitpix_test() {
   let mut input_options = FitsOptions::new_invalid();
   assert!(matches!(
     parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(InvalidHeaderErr::NoValue{..})
+    Err(InvalidHeaderErr::NoValue { .. })
   ));
 }
