@@ -19,6 +19,10 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
+//Error messages
+pub(crate) const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encoding";
+pub(crate) const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encoding";
+
 #[derive(Debug)]
 pub enum HeaderReadErr {
   IoErr(super::io_err::FitsReadErr),

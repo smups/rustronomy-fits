@@ -19,14 +19,6 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use std::str::FromStr;
-
-use super::header_io::ConcatErr;
-
-//Error messages
-const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encoding";
-const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encoding";
-
 pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
   match string {
     "T" => Ok(true),

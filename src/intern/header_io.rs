@@ -23,7 +23,7 @@ use rustronomy_core::prelude::MetaContainer;
 use crate::{
   api::io::*,
   err::{
-    header_err::{HeaderReadErr, InvalidHeaderErr},
+    header_err::{HeaderReadErr, InvalidHeaderErr, UTF8_KEYERR, UTF8_RECERR},
     io_err::FitsReadErr,
   },
 };
@@ -51,10 +51,6 @@ const REFERENC: &str = "REFERENC";
 const TELESCOP: &str = "TELESCOP";
 const INSTRUME: &str = "INSTRUME";
 const OBJECT: &str = "OBJECT";
-
-//Error messages
-const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encoding";
-const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encoding";
 
 /// Reads header of a FITS Header-Data-Unit and stores all encountered tags in
 /// the supplied metadata container.
