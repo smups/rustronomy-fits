@@ -59,7 +59,7 @@ const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encodin
 pub fn read_header(
   reader: &mut impl FitsReader,
   meta: &mut impl MetaContainer
-) -> Result<FitsOptions, Box<dyn Error>> {
+) -> Result<Box<FitsOptions>, Box<dyn Error>> {
   //(1) Start with reading all data that is supposed to 
   let bytes = read_header_blocks(reader)?;
 
@@ -215,9 +215,9 @@ impl From<chrono::ParseError> for ConcatErr {
 fn concat<'a>(
   kvc: impl Iterator<Item = (&'a str, Option<&'a str>, Option<&'a str>)> + 'a,
   metadata: &mut impl MetaContainer,
-) -> Result<FitsOptions, ConcatErr> {
+) -> Result<Box<FitsOptions>, ConcatErr> {
   //Make vec of unparsed keyword-value pairs; keep commentary and history separate
-  let mut options = FitsOptions::new_invalid();
+  let mut options = Box::new(FitsOptions::new_invalid());
   let mut commentary = String::new();
   let mut history = String::new();
 
