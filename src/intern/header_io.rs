@@ -18,10 +18,6 @@
   (1) Resident of the Kingdom of the Netherlands; agreement between licensor and
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
-
-use std::{error::Error, str::FromStr};
-
-use chrono::{DateTime, Utc};
 use rustronomy_core::prelude::MetaContainer;
 
 use crate::{err::{io_err::FitsReadErr, header_err::{HeaderReadErr, InvalidHeaderErr}}, api::io::*};
