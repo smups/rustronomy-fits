@@ -22,7 +22,7 @@
 use std::{error::Error, str::FromStr};
 
 use chrono::{DateTime, Utc};
-use rustronomy_core::universal_containers::{metadata::TagError, MetaDataContainer};
+use rustronomy_core::prelude::MetaContainer;
 
 use crate::{err::io_err::FitsReadErr, api::io::*};
 
@@ -54,10 +54,13 @@ const OBJECT: &str = "OBJECT";
 const UTF8_KEYERR: &str = "Could not parse FITS keyword record using UTF-8 encoding";
 const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encoding";
 
+/// Reads header of a FITS Header-Data-Unit and stores all encountered tags in
+/// the supplied metadata container.
 pub fn read_header(
   reader: &mut impl FitsReader,
-) -> Result<(FitsOptions, impl MetaDataContainer), Box<dyn Error>> {
-  //(1) Start with reading the raw bytes from storage
+  meta: &mut impl MetaContainer
+) -> Result<FitsOptions, Box<dyn Error>> {
+  //(1) Start with reading all data that is supposed to 
   let bytes = read_header_blocks(reader)?;
 
   //(2) Split the raw bytes into Key-Value-Comment triplets
@@ -65,11 +68,10 @@ pub fn read_header(
 
   //(3) Concatenate the Key-Value-Comment triplets into coherent data
   // -> store this in a metacontainer
-  let mut meta = rustronomy_core::universal_containers::meta_only::MetaOnly::new();
-  let options = concat(kvc, &mut meta)?;
+  let options = concat(kvc, meta)?;
 
   //(R) return metadata and options
-  Ok((options, meta))
+  Ok(options)
 }
 
 /// Reads FITS blocks from the reader until encountering the END keyword or until
@@ -88,7 +90,7 @@ fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadE
     */
     let last_record = &block[crate::BLOCK_SIZE - crate::RECORD_SIZE..crate::BLOCK_SIZE];
     let last_keyword = std::str::from_utf8(&last_record[0..8]).expect(UTF8_KEYERR).trim();
-    if last_record == &[' ' as u8; 80] || last_keyword == END {
+    if last_record == &[b' '; 80] || last_keyword == END {
       //append the last block and return
       header_bytes.append(&mut block);
       break header_bytes;
@@ -210,21 +212,9 @@ impl From<chrono::ParseError> for ConcatErr {
   }
 }
 
-impl From<TagError> for ConcatErr {
-  fn from(err: TagError) -> Self {
-    use ConcatErr::*;
-    use TagError::*;
-    match err {
-      TagParseError(msg) => FormatErr("unknown", msg),
-      RestrictedTagError(_tag) => RestrictedKw("unknown"),
-      other => FormatErr("unkown", other.to_string()),
-    }
-  }
-}
-
 fn concat<'a>(
   kvc: impl Iterator<Item = (&'a str, Option<&'a str>, Option<&'a str>)> + 'a,
-  metadata: &mut impl MetaDataContainer,
+  metadata: &mut impl MetaContainer,
 ) -> Result<FitsOptions, ConcatErr> {
   //Make vec of unparsed keyword-value pairs; keep commentary and history separate
   let mut options = FitsOptions::new_invalid();
@@ -270,7 +260,7 @@ fn concat<'a>(
       //should push its completed value to the record list since we have now
       //encountered a non-CONTINUE keyword. We should also reset the value of
       //extended_string to None (the mem::take fn does this).
-      insert_meta_tag(key, &current_string.0, Some(&current_string.1), metadata)?;
+      insert_meta_tag(key, &current_string.0, metadata)?;
       continue;
     }
 
@@ -317,21 +307,17 @@ fn concat<'a>(
         extended_string = Some((key.to_string(), value.to_string()));
       } else {
         //(4b) This is not an extended string kw -> push it
-        metadata.insert_generic_tag(key, value.to_string())?;
+        metadata.insert_string_tag(key, value);
       }
     };
   }
 
   //(3) Push the history and commentary kw's
-  metadata
-    .insert_generic_tag("HISTORY", history)
-    .expect("error on non-restricted key. This is a BUG");
-  metadata
-    .insert_generic_tag("COMMENT", commentary)
-    .expect("error on non-restricted key. This is a BUG");
+  metadata.insert_string_tag("HISTORY", &history);
+  metadata.insert_string_tag("COMMENT", &commentary);
 
   //(R) the meta vec
-  Ok((options))
+  Ok(options)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -381,38 +367,38 @@ fn parse_bitpix(
 fn insert_meta_tag(
   key: &str,
   value: &str,
-  _comment: Option<&str>,
-  metadata: &mut impl MetaDataContainer,
+  metadata: &mut impl MetaContainer,
 ) -> Result<(), ConcatErr> {
+  use rustronomy_core::meta::tags as tags;
   Ok( match key {
     //Reserved kw describing observations
     DATE_OBS => {
-      metadata.insert_date(value.parse()?)?;
+      metadata.insert_tag(&tags::CreationDate(value.parse()?));
     }
     DATE => {
-      metadata.insert_last_modified(value.parse()?)?;
+      metadata.insert_tag(&tags::LastModified(value.parse()?));
     }
     AUTHOR => {
-      metadata.insert_author(value.to_string())?;
+      metadata.insert_tag(&tags::Author(value.to_string()));
     }
     REFERENC => {
-      metadata.insert_reference(value.to_string())?;
+      let author = if let Some(author) = metadata.get_tag::<tags::Author>() {
+        &author.0
+      } else { "" };
+      metadata.insert_tag(&tags::ReferencePublication::new(value, author));
     }
     TELESCOP => {
-      metadata.insert_telescope(value.to_string())?;
+      metadata.insert_tag(&tags::Telescope(value.to_string()));
     }
     INSTRUME => {
-      metadata.insert_instrument(value.to_string())?;
+      metadata.insert_tag(&tags::Instrument(value.to_string()));
     }
     OBJECT => {
-      metadata.insert_object(value.to_string())?;
+      metadata.insert_tag(&tags::Object(value.to_string()));
     }
     BLANK => (), //do nothing
     other => {
-      //Non restricted key!
-      metadata
-        .insert_generic_tag(key, value.to_string())
-        .expect(&format!("error on non-restricted key \"{other}\". This is a BUG"));
+      metadata.insert_string_tag(key, value);
     }
   })
 }
