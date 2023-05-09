@@ -37,6 +37,17 @@ impl From<super::io_err::FitsReadErr> for HeaderReadErr {
   }
 }
 
+impl std::fmt::Display for HeaderReadErr {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    use HeaderReadErr::*;
+    match self {
+      IoErr(err) => write!(f, "IOError: \"{err}\""),
+      InvalidHeader(err) => write!(f, "Malformed Header: \"{err}\"")
+    }
+  }
+}
+impl std::error::Error for HeaderReadErr {}
+
 #[derive(Debug)]
 pub enum InvalidHeaderErr {
   NoValue { key: &'static str },
