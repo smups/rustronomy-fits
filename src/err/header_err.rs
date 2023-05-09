@@ -25,6 +25,18 @@ pub enum HeaderReadErr {
   InvalidHeader(InvalidHeaderErr)
 }
 
+impl From<InvalidHeaderErr> for HeaderReadErr {
+  fn from(value: InvalidHeaderErr) -> Self {
+    HeaderReadErr::InvalidHeader(value)
+  }
+}
+
+impl From<super::io_err::FitsReadErr> for HeaderReadErr {
+  fn from(value: super::io_err::FitsReadErr) -> Self {
+    HeaderReadErr::IoErr(value)
+  }
+}
+
 #[derive(Debug)]
 pub enum InvalidHeaderErr {
   NoValue { key: &'static str },
