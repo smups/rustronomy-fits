@@ -24,7 +24,7 @@ use std::{error::Error, str::FromStr};
 use chrono::{DateTime, Utc};
 use rustronomy_core::prelude::MetaContainer;
 
-use crate::{err::io_err::FitsReadErr, api::io::*};
+use crate::{err::{io_err::FitsReadErr, header_err::{HeaderReadErr, InvalidHeaderErr}}, api::io::*};
 
 use super::FitsOptions;
 
@@ -59,7 +59,7 @@ const UTF8_RECERR: &str = "Could not parse FITS record value using UTF-8 encodin
 pub fn read_header(
   reader: &mut impl FitsReader,
   meta: &mut impl MetaContainer
-) -> Result<Box<FitsOptions>, Box<dyn Error>> {
+) -> Result<Box<FitsOptions>, HeaderReadErr> {
   //(1) Start with reading all data that is supposed to 
   let bytes = read_header_blocks(reader)?;
 
@@ -171,51 +171,10 @@ fn parse_keyword_record(chunk: &[u8]) -> (&str, Option<&str>, Option<&str>) {
   return (key, value, comment);
 }
 
-#[derive(Debug, Clone)]
-/// This error type represents all the things that can go wrong when turning FITS
-/// key-value-comment triplets into rustronomy metadata and options. All of these
-/// errors are due to invalid FITS files!
-pub enum ConcatErr {
-  NoValue(&'static str),
-  NaxisOob { idx: usize, n_axes: u16 },
-  FormatErr(&'static str, String),
-  RestrictedKw(&'static str),
-}
-
-impl ConcatErr {
-  const ERROR_START: &str = "[INVALID FITS FILE]: ";
-  const ERROR_END: &str = "Cannot parse this FITS file. Please make sure it is formatted properly!";
-}
-
-impl std::fmt::Display for ConcatErr {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    use ConcatErr::*;
-    write!(f, "{}", Self::ERROR_START)?;
-    match self {
-      NoValue(kw) => write!(f, "encountered a {kw} keyword without a value."),
-      NaxisOob { idx, n_axes } => {
-        write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, n_axes)
-      }
-      FormatErr(kw, err) => {
-        write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", kw, err)
-      }
-      RestrictedKw(kw) => write!(f, "tried to insert restricted keyword \"{}\"", kw),
-    }?;
-    writeln!(f, "{}", Self::ERROR_END)
-  }
-}
-impl std::error::Error for ConcatErr {}
-
-impl From<chrono::ParseError> for ConcatErr {
-  fn from(value: <DateTime<Utc> as FromStr>::Err) -> Self {
-    Self::FormatErr("Date-like", value.to_string())
-  }
-}
-
 fn concat<'a>(
   kvc: impl Iterator<Item = (&'a str, Option<&'a str>, Option<&'a str>)> + 'a,
   metadata: &mut impl MetaContainer,
-) -> Result<Box<FitsOptions>, ConcatErr> {
+) -> Result<Box<FitsOptions>, InvalidHeaderErr> {
   //Make vec of unparsed keyword-value pairs; keep commentary and history separate
   let mut options = Box::new(FitsOptions::new_invalid());
   let mut commentary = String::new();
@@ -248,7 +207,7 @@ fn concat<'a>(
       if let Some((_, ref mut current_string)) = extended_string {
         current_string.pop(); //pop the ' character
         current_string.pop(); //pop the & character
-        let new_ext = value.ok_or(ConcatErr::NoValue(CONTINUE))?;
+        let new_ext = value.ok_or(InvalidHeaderErr::NoValue{ key: CONTINUE })?;
         current_string.push_str(&new_ext[1..]); //don´t append leading '
       } else {
         //Interpret this CONTINUE kw as commentary
@@ -325,17 +284,17 @@ fn concat<'a>(
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Helper function that parses NAXIS type keywords
-fn parse_naxis(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), ConcatErr> {
-  let n = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
-  let value = value.ok_or(ConcatErr::NoValue(NAXIS))?;
-  if n == "" {
-    options.dim = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
+fn parse_naxis(key: &str, value: Option<&str>, options: &mut FitsOptions) -> Result<(), InvalidHeaderErr> {
+  let idx = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
+  let value = value.ok_or(InvalidHeaderErr::NoValue{ key: NAXIS })?;
+  if idx == "" {
+    options.dim = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
     options.shape = vec![0; options.dim as usize];
   } else {
-    let n: usize = n.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
-    let value: u16 = value.parse().map_err(|e| ConcatErr::FormatErr(NAXIS, format!("{e}")))?;
+    let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
+    let value: u16 = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
     //index in FITS starts with 1, rust starts with 0 so minus one to convert
-    *options.shape.get_mut(n - 1).ok_or(ConcatErr::NaxisOob { idx: n, n_axes: options.dim })? =
+    *options.shape.get_mut(idx - 1).ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? =
       value;
   }
   Ok(())
@@ -345,10 +304,10 @@ fn parse_simple(
   key: &str,
   value: Option<&str>,
   options: &mut FitsOptions,
-) -> Result<(), ConcatErr> {
-  let conforming = value.ok_or(ConcatErr::NoValue(SIMPLE))?;
+) -> Result<(), InvalidHeaderErr> {
+  let conforming = value.ok_or(InvalidHeaderErr::NoValue{ key: SIMPLE })?;
   options.conforming = super::keyword_utils::parse_fits_bool(conforming)
-    .map_err(|e| ConcatErr::FormatErr(SIMPLE, format!("{e}")))?;
+    .map_err(|err| InvalidHeaderErr::FmtErr { key: SIMPLE, err })?;
   Ok(())
 }
 
@@ -356,11 +315,11 @@ fn parse_bitpix(
   key: &str,
   value: Option<&str>,
   options: &mut FitsOptions,
-) -> Result<(), ConcatErr> {
+) -> Result<(), InvalidHeaderErr> {
   options.bitpix = value
-    .ok_or(ConcatErr::NoValue(BITPIX))?
+    .ok_or(InvalidHeaderErr::NoValue{ key: BITPIX })?
     .parse()
-    .map_err(|e| ConcatErr::FormatErr(BITPIX, format!("{e}")))?;
+    .map_err(|err| InvalidHeaderErr::fmt_err(BITPIX, err))?;
   Ok(())
 }
 
@@ -368,15 +327,15 @@ fn insert_meta_tag(
   key: &str,
   value: &str,
   metadata: &mut impl MetaContainer,
-) -> Result<(), ConcatErr> {
+) -> Result<(), InvalidHeaderErr> {
   use rustronomy_core::meta::tags as tags;
   Ok( match key {
     //Reserved kw describing observations
     DATE_OBS => {
-      metadata.insert_tag(&tags::CreationDate(value.parse()?));
+      metadata.insert_tag(&tags::CreationDate(value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE_OBS, err))?));
     }
     DATE => {
-      metadata.insert_tag(&tags::LastModified(value.parse()?));
+      metadata.insert_tag(&tags::LastModified(value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE, err))?));
     }
     AUTHOR => {
       metadata.insert_tag(&tags::Author(value.to_string()));
@@ -511,7 +470,7 @@ fn naxis_oob_test() {
   let mut input_options = FitsOptions::new_invalid();
   assert!(matches!(
     parse_naxis(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(ConcatErr::NaxisOob { idx: 1, n_axes: 0 })
+    Err(InvalidHeaderErr::NaxisOob { idx: 1, naxes: 0 })
   ))
 }
 
@@ -521,7 +480,7 @@ fn invalid_novalue_simple_test() {
   let mut input_options = FitsOptions::new_invalid();
   assert!(matches!(
     parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(ConcatErr::NoValue(_))
+    Err(InvalidHeaderErr::NoValue {..})
   ));
 }
 
@@ -551,6 +510,6 @@ fn invalid_novalue_bitpix_test() {
   let mut input_options = FitsOptions::new_invalid();
   assert!(matches!(
     parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(ConcatErr::NoValue(_))
+    Err(InvalidHeaderErr::NoValue{..})
   ));
 }

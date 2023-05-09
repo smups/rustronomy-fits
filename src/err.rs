@@ -25,3 +25,4 @@
 
 //Listing of the errors
 pub mod io_err;
+pub mod header_err;
