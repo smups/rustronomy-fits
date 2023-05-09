@@ -45,9 +45,6 @@ pub enum InvalidHeaderErr {
 }
 
 impl InvalidHeaderErr {
-  const ERROR_START: &str = "[INVALID FITS FILE]: ";
-  const ERROR_END: &str = "Cannot parse this FITS file. Please make sure it is formatted properly!";
-
   pub(crate) fn fmt_err<T>(key: &'static str, err: T) -> Self
   where
     T: std::fmt::Display + std::error::Error
@@ -59,7 +56,6 @@ impl InvalidHeaderErr {
 impl std::fmt::Display for InvalidHeaderErr {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     use InvalidHeaderErr::*;
-    write!(f, "{}", Self::ERROR_START)?;
     match self {
       NoValue { key } => write!(f, "encountered a {key} keyword without a value."),
       NaxisOob { idx, naxes } => {
@@ -68,8 +64,7 @@ impl std::fmt::Display for InvalidHeaderErr {
       FmtErr { key, err } => {
         write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", key, err)
       }
-    }?;
-    writeln!(f, "{}", Self::ERROR_END)
+    }
   }
 }
 impl std::error::Error for InvalidHeaderErr {}
