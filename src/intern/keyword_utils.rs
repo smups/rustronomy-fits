@@ -19,6 +19,8 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
+use std::os::unix::fs::chroot;
+
 use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
 use crate::err::header_err::InvalidHeaderErr;
@@ -43,36 +45,58 @@ pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
 /// string types always start and end with. It also removes any trailing whitespace.
 pub fn strip_fits_string(string: &str) -> &str {
   let string = string.trim();
-  if string.as_bytes()[0] == b'\'' && string.as_bytes()[string.len()] == b'\'' {
+  if string.as_bytes()[0] == b'\'' && string.as_bytes()[string.len() - 1] == b'\'' {
     string[1..(string.len() - 1)].trim()
   } else {
     string
   }
 }
 
-// #[inline] pub fn parse_fits_datetime(string: &str) -> Result<chrono::DateTime<chrono::Utc>, String> {
-//   //(1) Split datetime into date and time
-//   let datetime: Vec<&str> = string.split('T').collect();
-//   let (date, time) = (datetime[0].trim(), datetime[1].trim());
+#[inline]
+pub fn parse_fits_datetime(key: &'static str, string: &str) -> Result<chrono::DateTime<chrono::Utc>, InvalidHeaderErr> {
+  type Error = InvalidHeaderErr;
+  
+  //(1) Split datetime into date and time
+  let datetime: Vec<&str> = string.split('T').collect();
+  let (date, time) = if datetime.len() == 2 {
+    (datetime[0].trim(), Some(datetime[1].trim()))
+  } else {
+    (datetime[0].trim(), None)
+  };
 
-//   //(2) Split date into Year, month and day
-//   let ymd: Vec<&str> = date.split("-").collect();
-//   let year: i32 = if ymd[0].len() == 2 {
-//     //This is a year in the 20th century
-//     1900i32 + str::parse(ymd[0]).map_err(|e| format!("{e}"))?
-//   } else if ymd[0].len() == 4 {
-//     //This is a year in another century after the year 0
-//     str::parse(ymd[0]).map_err(|e| format!("{e}"))?
-//   } else if ymd[0].len() == 6 {
-//     //This is a year that might be BEFORE the year zero, or after 9999
-//     str::parse(ymd[0]).map_err(|e| format!("{e}"))?
-//   } else {
-//     return Err("invalid date format".to_string());
-//   };
-//   let month: u8 = str::parse(ymd[1]).map_err(|e| format!("{e}"))?;
+  //(2) Split date into Year, month and day
+  let ymd: Vec<&str> = date.split("-").collect();
+  let year = if ymd[0].len() == 2 {
+    //This is a year in the 20th century
+    1900 + ymd[0].parse::<i32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?
+  } else if ymd[0].len() == 4 {
+    //This is a year in another century after the year 0
+    ymd[0].parse::<i32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?
+  } else if ymd[0].len() == 6 {
+    //This is a year that might be BEFORE the year zero, or after 9999
+    ymd[0].parse::<i32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?
+  } else {
+    return Err(Error::FmtErr { key, err: "".to_string() });
+  };
+  let month = ymd[1].parse::<u32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?;
+  let day = ymd[2].parse::<u32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?;
+  let date = chrono::NaiveDate::from_ymd(year, month, day);
 
-//   todo!()
-// }
+  //(3) Split time into hour, minute and second
+  let time = if let Some(hms) = time {
+    let hms: Vec<&str> = hms.split(":").collect();
+    let hour = hms[0].parse::<u32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?;
+    let min = hms[1].parse::<u32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?;
+    let sec = hms[2].parse::<u32>().map_err(|err| Error::FmtErr { key, err: err.to_string() })?;
+    Some(chrono::NaiveTime::from_hms(hour, min, sec))
+  } else {
+    None
+  };
+
+  //(4) Return UTC time
+  let datetime = if let Some(time) = time {date.and_time(time)} else { date.and_hms(0, 0, 0) };
+  Ok(chrono::DateTime::from_utc(datetime, chrono::Utc))
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //                         TYPED TAG HELPER FUNCTIONS                         //
@@ -83,9 +107,7 @@ pub fn set_creation_date(
   value: &str,
   meta: &mut impl MetaContainer,
 ) -> Result<(), InvalidHeaderErr> {
-  meta.insert_tag(&tags::CreationDate(
-    value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE_OBS, err))?,
-  ));
+  meta.insert_tag(&tags::CreationDate(parse_fits_datetime(DATE_OBS, value)?));
   Ok(())
 }
 
@@ -94,9 +116,7 @@ pub fn set_modified_date(
   value: &str,
   meta: &mut impl MetaContainer,
 ) -> Result<(), InvalidHeaderErr> {
-  meta.insert_tag(&tags::LastModified(
-    value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE, err))?,
-  ));
+  meta.insert_tag(&tags::LastModified(parse_fits_datetime(DATE, value)?));
   Ok(())
 }
 
