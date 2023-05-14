@@ -28,7 +28,7 @@ use std::{
 use crate::{api::io::*, err::io_err::*};
 
 //Get block size from root
-const BLOCK_SIZE: usize = crate::BLOCK_SIZE;
+const BLOCK_SIZE: usize = crate::intern::fits_consts::BLOCK_SIZE;
 
 #[derive(Debug)]
 pub struct FitsFileReader {

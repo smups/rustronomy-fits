@@ -21,6 +21,8 @@
 
 use std::fmt::{self, Display, Formatter};
 
+use crate::intern::fits_consts::BLOCK_SIZE;
+
 #[derive(Debug)]
 /// This error may be thrown by a `FitsReader` when reading from a FITS file
 pub enum FitsReadErr {
@@ -42,30 +44,16 @@ impl Display for FitsReadErr {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     use FitsReadErr::*;
     write!(f, "Error while reading from FITS file: ")?;
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     match self {
-      DestNotBlockSized(invalid_size) => {
-        write!(
-          f,
-          "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
-          crate::BLOCK_SIZE
-        )
-      }
-      SourceNotBLockSized(invalid_size) => {
-        write!(
-          f,
-          "file size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
-          crate::BLOCK_SIZE
-        )
-      }
-      EndOfSource { blcks_remain: file_size, blcks_req: blocks_read } => {
-        write!(
-          f,
-          "tried to read {blocks_read} FITS blocks, but file is only {file_size} blocks long"
-        )
-      }
-      IOErr(err) => {
+      DestNotBlockSized(invalid_size) =>
+        write!(f, "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({BLOCK_SIZE} bytes)"),
+      SourceNotBLockSized(invalid_size) =>
+        write!(f, "file size {invalid_size} not a multiple of BLOCK_SIZE ({BLOCK_SIZE} bytes)"),
+      EndOfSource { blcks_remain: file_size, blcks_req: blocks_read } =>
+        write!(f, "tried to read {blocks_read} FITS blocks, but file is only {file_size} blocks long"),
+      IOErr(err) => 
         write!(f, "IO error: {err}")
-      }
     }
   }
 }
@@ -90,17 +78,10 @@ impl Display for FitsWriteErr {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     use FitsWriteErr::*;
     write!(f, "Error while writing to FITS file: ")?;
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     match self {
-      SourceSize(invalid_size) => {
-        write!(
-          f,
-          "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({} bytes)",
-          crate::BLOCK_SIZE
-        )
-      }
-      IOErr(err) => {
-        write!(f, "IO error: {err}")
-      }
+      SourceSize(invalid_size) => write!(f, "buffer size {invalid_size} not a multiple of BLOCK_SIZE ({BLOCK_SIZE} bytes)"),
+      IOErr(err) => write!(f, "IO error: {err}")
     }
   }
 }

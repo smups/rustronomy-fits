@@ -39,7 +39,3 @@ pub(crate) mod intern;
 //public api
 mod api;
 pub use api::*;
-
-//Constants defined by the FITS standard
-pub(crate) const BLOCK_SIZE: usize = 2880;
-pub(crate) const RECORD_SIZE: usize = 80;

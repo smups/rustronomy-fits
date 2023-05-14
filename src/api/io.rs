@@ -22,7 +22,7 @@
 use crate::err::io_err::*;
 
 //Get block size from root
-const BLOCK_SIZE: usize = crate::BLOCK_SIZE;
+const BLOCK_SIZE: usize = crate::intern::fits_consts::BLOCK_SIZE;
 
 pub trait FitsReader {
   /// Creates and fills a buffer with length `n_blocks*BLOCK_SIZE`.
