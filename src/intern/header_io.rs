@@ -18,7 +18,7 @@
   (1) Resident of the Kingdom of the Netherlands; agreement between licensor and
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
-use rustronomy_core::prelude::MetaContainer;
+use rustronomy_core::{prelude::MetaContainer, universal_containers::MetaOnly};
 
 use crate::{
   api::io::*,
@@ -386,7 +386,7 @@ fn record_split_test() {
 }
 
 #[test]
-fn record_concat_test() {
+fn continue_record_test() {
   //Setup dummy data
   const TEST_KEY: &str = "TEST";
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 8] = [
@@ -428,7 +428,12 @@ fn record_concat_test() {
     (END, None, None),
   ];
   const TEST_ANSWER: &str = "'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutrum ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habitasse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit amet semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ullamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque fringilla ex at scelerisque. Integer vitae tincidunt tortor.'";
-  todo!()
+  let mut test_meta = MetaOnly::default();
+  //run concat on the test keys!
+  concat(TEST_RECS.into_iter(), &mut test_meta).unwrap();
+  dbg!(&test_meta);
+  assert!(test_meta.contains_string_tag(TEST_KEY));
+  assert_eq!(TEST_ANSWER, test_meta.get_string_tag(TEST_KEY).unwrap());
 }
 
 #[test]
