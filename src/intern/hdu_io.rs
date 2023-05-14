@@ -42,3 +42,16 @@ pub fn read_hdu(reader: &mut impl FitsReader) -> Result<Hdu, Box<dyn Error>> {
 pub fn write_hdu(hdu: Hdu, writer: &mut impl FitsWriter) -> Result<(), Box<dyn Error>> {
   todo!()
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//                                 UNIT TESTS                                 //
+////////////////////////////////////////////////////////////////////////////////
+
+#[test]
+pub fn read_header_test() {
+  let mut test_writer = super::test_io::mock_data::HUBBLE_FGS.clone();
+  let mut hdu0 = Hdu::default();
+  let opts = super::header_io::read_header(&mut test_writer, &mut hdu0).unwrap();
+  println!("{hdu0:?}");
+  println!("{opts:?}");
+}

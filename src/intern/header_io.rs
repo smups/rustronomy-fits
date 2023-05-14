@@ -216,6 +216,11 @@ fn concat<'a>(
       parse_bitpix(key, value, &mut options)?;
       continue;
     }
+    if key == EXTEND {
+      //(d) EXTEND
+      parse_extend(key, value, &mut options)?;
+      continue;
+    }
 
     /*
      * (3) Deal with commentary keywords
@@ -294,6 +299,17 @@ fn parse_simple(
   let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: SIMPLE })?;
   options.conforming = super::keyword_utils::parse_fits_bool(conforming)
     .map_err(|err| InvalidHeaderErr::FmtErr { key: SIMPLE, err })?;
+  Ok(())
+}
+
+fn parse_extend(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), InvalidHeaderErr> {
+  let extends = value.ok_or(InvalidHeaderErr::NoValue { key: EXTEND })?;
+  options.extends = super::keyword_utils::parse_fits_bool(extends)
+    .map_err(|err| InvalidHeaderErr::FmtErr { key: EXTEND, err })?;
   Ok(())
 }
 

@@ -46,7 +46,7 @@ pub struct FitsOptions {
   bitpix: i8, //-64 to +64
   extends: bool,
   dim: u16,        //number of axes. Max is 999
-  shape: Vec<u16>, //each axis max size is 999
+  shape: Vec<usize>, //each axis max size is undefined
 }
 
 impl FitsOptions {
@@ -72,6 +72,7 @@ pub(crate) mod fits_consts {
   pub const COMMENT: &str = "COMMENT";
   pub const HISTORY: &str = "HISTORY";
   pub const BLANK: &str = "BLANK";
+  pub const EXTEND: &str = "EXTEND";
 
   //FITS keywords that correspond to keywords that rustronomy understands
   pub const DATE: &str = "DATE";
