@@ -217,8 +217,7 @@ fn concat<'a>(
       //should push its completed value to the record list since we have now
       //encountered a non-CONTINUE keyword. We should also reset the value of
       //extended_string to None (the mem::take fn does this).
-      insert_meta_tag(key, &current_string.0, metadata)?;
-      continue;
+      insert_meta_tag(&current_string.0, &current_string.1, metadata)?;
     }
 
     /*
@@ -251,6 +250,9 @@ fn concat<'a>(
       history.push_str(value.unwrap_or(""));
       continue;
     }
+
+    /* (3b) end the keyword parsing once we hit the END kw */
+    if key == END { break; }
 
     /*
      * (4) At this point, we're just working with a normal keyword. If it's an
