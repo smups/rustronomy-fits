@@ -19,7 +19,7 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use rustronomy_core::{prelude::MetaContainer, meta::tags};
+use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
 use crate::err::header_err::InvalidHeaderErr;
 

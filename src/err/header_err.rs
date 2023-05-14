@@ -46,7 +46,7 @@ impl std::fmt::Display for HeaderReadErr {
     use HeaderReadErr::*;
     match self {
       IoErr(err) => write!(f, "IOError: \"{err}\""),
-      InvalidHeader(err) => write!(f, "Malformed Header: \"{err}\"")
+      InvalidHeader(err) => write!(f, "Malformed Header: \"{err}\""),
     }
   }
 }

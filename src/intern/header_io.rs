@@ -28,8 +28,7 @@ use crate::{
   },
 };
 
-use super::FitsOptions;
-use super::fits_consts::*;
+use super::{fits_consts::*, FitsOptions};
 
 /// Reads header of a FITS Header-Data-Unit and stores all encountered tags in
 /// the supplied metadata container.
@@ -231,7 +230,9 @@ fn concat<'a>(
     }
 
     /* (3b) end the keyword parsing once we hit the END kw */
-    if key == END { break; }
+    if key == END {
+      break;
+    }
 
     /*
      * (4) At this point, we're just working with a normal keyword. If it's an
