@@ -19,7 +19,7 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use crate::{io::FitsReader, intern::fits_consts::BLOCK_SIZE};
+use crate::{intern::fits_consts::BLOCK_SIZE, io::FitsReader};
 
 // Shorthand error type
 type Error = crate::err::io_err::FitsReadErr;
@@ -100,10 +100,7 @@ fn test_testio_fitsreader_dest_not_block_sized() {
 #[test]
 fn test_testio_fitsreader_source_st_dest() {
   let mut rdr = TestIo::new(&[0; BLOCK_SIZE]);
-  assert!(matches!(
-    rdr.read_blocks_into(&mut [0; 2 * BLOCK_SIZE]),
-    Err(Error::EndOfSource { .. })
-  ));
+  assert!(matches!(rdr.read_blocks_into(&mut [0; 2 * BLOCK_SIZE]), Err(Error::EndOfSource { .. })));
 }
 
 #[test]
@@ -112,10 +109,7 @@ fn test_testio_fitsreader_read_too_much() {
   //This read should work
   rdr.read_blocks_into(&mut [0; BLOCK_SIZE]).unwrap();
   //This one should not
-  assert!(matches!(
-    rdr.read_blocks_into(&mut [0; 2 * BLOCK_SIZE]),
-    Err(Error::EndOfSource { .. })
-  ));
+  assert!(matches!(rdr.read_blocks_into(&mut [0; 2 * BLOCK_SIZE]), Err(Error::EndOfSource { .. })));
 }
 
 #[test]

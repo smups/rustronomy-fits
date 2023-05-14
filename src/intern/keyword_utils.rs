@@ -41,7 +41,7 @@ pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
 #[inline]
 /// This function removes the leading and trailing apostrophe's (') that FITS
 /// string types always start and end with. It also removes any trailing whitespace.
-pub fn parse_fits_string(string: &str) -> &str {
+pub fn strip_fits_string(string: &str) -> &str {
   let string = string.trim();
   if string.as_bytes()[0] == b'\'' && string.as_bytes()[string.len()] == b'\'' {
     string[1..(string.len() - 1)].trim()

@@ -28,7 +28,7 @@ use crate::{
   },
 };
 
-use super::{fits_consts::*, FitsOptions};
+use super::{fits_consts::*, FitsOptions, keyword_utils::strip_fits_string};
 
 /// Reads header of a FITS Header-Data-Unit and stores all encountered tags in
 /// the supplied metadata container.
@@ -195,7 +195,7 @@ fn concat<'a>(
       //should push its completed value to the record list since we have now
       //encountered a non-CONTINUE keyword. We should also reset the value of
       //extended_string to None (the mem::take fn does this).
-      insert_meta_tag(&current_string.0, &current_string.1, metadata)?;
+      insert_meta_tag(&current_string.0, strip_fits_string(&current_string.1), metadata)?;
     }
 
     /*
@@ -251,7 +251,7 @@ fn concat<'a>(
         extended_string = Some((key.to_string(), value.to_string()));
       } else {
         //(4b) This is not an extended string kw -> push it
-        insert_meta_tag(key, value, metadata)?;
+        insert_meta_tag(key, strip_fits_string(value), metadata)?;
       }
     };
   }

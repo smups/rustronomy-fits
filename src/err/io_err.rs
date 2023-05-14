@@ -52,8 +52,7 @@ impl Display for FitsReadErr {
         write!(f, "file size {invalid_size} not a multiple of BLOCK_SIZE ({BLOCK_SIZE} bytes)"),
       EndOfSource { blcks_remain: file_size, blcks_req: blocks_read } =>
         write!(f, "tried to read {blocks_read} FITS blocks, but file is only {file_size} blocks long"),
-      IOErr(err) => 
-        write!(f, "IO error: {err}")
+      IOErr(err) => write!(f, "IO error: {err}")
     }
   }
 }

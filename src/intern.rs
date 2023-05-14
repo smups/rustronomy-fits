@@ -45,7 +45,7 @@ pub struct FitsOptions {
   conforming: bool,
   bitpix: i8, //-64 to +64
   extends: bool,
-  dim: u16,        //number of axes. Max is 999
+  dim: u16,          //number of axes. Max is 999
   shape: Vec<usize>, //each axis max size is undefined
 }
 
