@@ -25,6 +25,7 @@ use crate::err::header_err::InvalidHeaderErr;
 
 use super::fits_consts::*;
 
+#[inline]
 pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
   match string {
     "T" => Ok(true),
@@ -33,7 +34,7 @@ pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
   }
 }
 
-// pub fn parse_fits_datetime(string: &str) -> Result<chrono::DateTime<chrono::Utc>, String> {
+// #[inline] pub fn parse_fits_datetime(string: &str) -> Result<chrono::DateTime<chrono::Utc>, String> {
 //   //(1) Split datetime into date and time
 //   let datetime: Vec<&str> = string.split('T').collect();
 //   let (date, time) = (datetime[0].trim(), datetime[1].trim());
@@ -57,6 +58,7 @@ pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
 //   todo!()
 // }
 
+#[inline]
 pub fn set_creation_date(
   value: &str,
   meta: &mut impl MetaContainer,
@@ -67,6 +69,7 @@ pub fn set_creation_date(
   Ok(())
 }
 
+#[inline]
 pub fn set_modified_date(
   value: &str,
   meta: &mut impl MetaContainer,
@@ -77,6 +80,7 @@ pub fn set_modified_date(
   Ok(())
 }
 
+#[inline]
 pub fn set_author(value: &str, meta: &mut impl MetaContainer) {
   meta.insert_tag(&tags::Author(value.to_string()));
   // Add authors to the reference publication if no authors have already been
@@ -90,6 +94,7 @@ pub fn set_author(value: &str, meta: &mut impl MetaContainer) {
   }
 }
 
+#[inline]
 pub fn set_refpub_title(value: &str, meta: &mut impl MetaContainer) {
   if let Some(refpub) = meta.get_tag_mut::<tags::ReferencePublication>() {
     refpub.set_title(value.to_string());
@@ -98,14 +103,17 @@ pub fn set_refpub_title(value: &str, meta: &mut impl MetaContainer) {
   }
 }
 
+#[inline]
 pub fn set_telescope(value: &str, meta: &mut impl MetaContainer) {
   meta.insert_tag(&tags::Telescope(value.to_string()));
 }
 
+#[inline]
 pub fn set_instrument(value: &str, meta: &mut impl MetaContainer) {
   meta.insert_tag(&tags::Instrument(value.to_string()));
 }
 
+#[inline]
 pub fn set_object(value: &str, meta: &mut impl MetaContainer) {
   meta.insert_tag(&tags::Object(value.to_string()));
 }
