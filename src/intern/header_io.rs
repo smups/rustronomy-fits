@@ -28,7 +28,7 @@ use crate::{
   },
 };
 
-use super::{fits_consts::*, FitsOptions, keyword_utils::strip_fits_string};
+use super::{fits_consts::*, keyword_utils::strip_fits_string, FitsOptions};
 
 /// Reads header of a FITS Header-Data-Unit and stores all encountered tags in
 /// the supplied metadata container.

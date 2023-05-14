@@ -53,9 +53,12 @@ pub fn strip_fits_string(string: &str) -> &str {
 }
 
 #[inline]
-pub fn parse_fits_datetime(key: &'static str, string: &str) -> Result<chrono::DateTime<chrono::Utc>, InvalidHeaderErr> {
+pub fn parse_fits_datetime(
+  key: &'static str,
+  string: &str,
+) -> Result<chrono::DateTime<chrono::Utc>, InvalidHeaderErr> {
   type Error = InvalidHeaderErr;
-  
+
   //(1) Split datetime into date and time
   let datetime: Vec<&str> = string.split('T').collect();
   let (date, time) = if datetime.len() == 2 {
@@ -94,7 +97,7 @@ pub fn parse_fits_datetime(key: &'static str, string: &str) -> Result<chrono::Da
   };
 
   //(4) Return UTC time
-  let datetime = if let Some(time) = time {date.and_time(time)} else { date.and_hms(0, 0, 0) };
+  let datetime = if let Some(time) = time { date.and_time(time) } else { date.and_hms(0, 0, 0) };
   Ok(chrono::DateTime::from_utc(datetime, chrono::Utc))
 }
 
