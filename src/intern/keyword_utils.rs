@@ -25,7 +25,7 @@ use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
 use crate::err::header_err::{InvalidHeaderErr, UTF8_KEYERR};
 
-use super::{fits_consts::*, FitsOptions};
+use super::{fits_consts::*, HduOptions};
 
 ////////////////////////////////////////////////////////////////////////////////
 //                          GENERAL HELPER FUNCTIONS                          //
@@ -168,7 +168,7 @@ pub fn set_object(value: &str, meta: &mut impl MetaContainer) {
 pub fn parse_naxis(
   key: &str,
   value: Option<&str>,
-  options: &mut FitsOptions,
+  options: &mut HduOptions,
 ) -> Result<(), InvalidHeaderErr> {
   let idx = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
   let value = value.ok_or(InvalidHeaderErr::NoValue { key: NAXIS })?;
@@ -190,7 +190,7 @@ pub fn parse_naxis(
 pub fn parse_simple(
   key: &str,
   value: Option<&str>,
-  options: &mut FitsOptions,
+  options: &mut HduOptions,
 ) -> Result<(), InvalidHeaderErr> {
   let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: SIMPLE })?;
   options.conforming = super::keyword_utils::parse_fits_bool(conforming)
@@ -201,7 +201,7 @@ pub fn parse_simple(
 pub fn parse_extend(
   key: &str,
   value: Option<&str>,
-  options: &mut FitsOptions,
+  options: &mut HduOptions,
 ) -> Result<(), InvalidHeaderErr> {
   let extends = value.ok_or(InvalidHeaderErr::NoValue { key: EXTEND })?;
   options.extends = super::keyword_utils::parse_fits_bool(extends)
@@ -212,7 +212,7 @@ pub fn parse_extend(
 pub fn parse_bitpix(
   key: &str,
   value: Option<&str>,
-  options: &mut FitsOptions,
+  options: &mut HduOptions,
 ) -> Result<(), InvalidHeaderErr> {
   options.bitpix = value
     .ok_or(InvalidHeaderErr::NoValue { key: BITPIX })?
@@ -230,7 +230,7 @@ fn naxis_option_test() {
     ("NAXIS3", Some("272"), None),
   ];
   const TEST_ANSWER: [usize; 3] = [1000, 2250, 272];
-  let mut input_options = FitsOptions::new_invalid();
+  let mut input_options = HduOptions::new_invalid();
   for (key, value, _comment) in TEST_RECS {
     parse_naxis(key, value, &mut input_options).unwrap();
   }
@@ -242,7 +242,7 @@ fn naxis_option_test() {
 #[test]
 fn naxis_oob_test() {
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = ("NAXIS1", Some("1200"), None);
-  let mut input_options = FitsOptions::new_invalid();
+  let mut input_options = HduOptions::new_invalid();
   assert!(matches!(
     parse_naxis(TEST_RECS.0, TEST_RECS.1, &mut input_options),
     Err(InvalidHeaderErr::NaxisOob { idx: 1, naxes: 0 })
@@ -252,7 +252,7 @@ fn naxis_oob_test() {
 #[test]
 fn invalid_novalue_simple_test() {
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, None, None);
-  let mut input_options = FitsOptions::new_invalid();
+  let mut input_options = HduOptions::new_invalid();
   assert!(matches!(
     parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options),
     Err(InvalidHeaderErr::NoValue { .. })
@@ -264,7 +264,7 @@ fn simple_option_test() {
   //Setup dummy data
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, Some("T"), None);
   const TEST_ANSWER: bool = true;
-  let mut input_options = FitsOptions::new_invalid();
+  let mut input_options = HduOptions::new_invalid();
   parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
   assert!(input_options.conforming == TEST_ANSWER);
 }
@@ -274,7 +274,7 @@ fn bitpix_option_test() {
   //Setup dummy data
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, Some("-32"), None);
   const TEST_ANSWER: i8 = -32;
-  let mut input_options = FitsOptions::new_invalid();
+  let mut input_options = HduOptions::new_invalid();
   parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
   assert!(input_options.bitpix == TEST_ANSWER);
 }
@@ -282,7 +282,7 @@ fn bitpix_option_test() {
 #[test]
 fn invalid_novalue_bitpix_test() {
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, None, None);
-  let mut input_options = FitsOptions::new_invalid();
+  let mut input_options = HduOptions::new_invalid();
   assert!(matches!(
     parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options),
     Err(InvalidHeaderErr::NoValue { .. })

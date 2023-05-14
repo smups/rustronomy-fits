@@ -28,14 +28,14 @@ use crate::{
   },
 };
 
-use super::{fits_consts::*, keyword_utils::strip_fits_string, FitsOptions};
+use super::{fits_consts::*, keyword_utils::strip_fits_string, HduOptions};
 
 /// Reads header of a FITS Header-Data-Unit and stores all encountered tags in
 /// the supplied metadata container.
 pub fn read_header(
   reader: &mut impl FitsReader,
   meta: &mut impl MetaContainer,
-) -> Result<Box<FitsOptions>, HeaderReadErr> {
+) -> Result<Box<HduOptions>, HeaderReadErr> {
   //(1) Start with reading all data that is supposed to
   let bytes = read_header_blocks(reader)?;
 
@@ -150,9 +150,9 @@ fn split_keyword_record(chunk: &[u8]) -> (&str, Option<&str>, Option<&str>) {
 fn concat<'a>(
   kvc: impl Iterator<Item = (&'a str, Option<&'a str>, Option<&'a str>)> + 'a,
   metadata: &mut impl MetaContainer,
-) -> Result<Box<FitsOptions>, InvalidHeaderErr> {
+) -> Result<Box<HduOptions>, InvalidHeaderErr> {
   //Make vec of unparsed keyword-value pairs; keep commentary and history separate
-  let mut options = Box::new(FitsOptions::new_invalid());
+  let mut options = Box::new(HduOptions::new_invalid());
   let mut commentary = String::new();
   let mut history = String::new();
 
@@ -334,7 +334,7 @@ fn orphaned_continue_test() {
     (CONTINUE, None, None),
   ];
   const META_ANSWER: (&str, &str) = ("TEST_GARBAGE", "value");
-  let mut input_options = FitsOptions::new_invalid();
+  let mut input_options = HduOptions::new_invalid();
   todo!()
 }
 
@@ -342,6 +342,6 @@ fn orphaned_continue_test() {
 fn invalid_novalue_continue_test() {
   const TEST_RECS: [(&str, Option<&str>, Option<&str>); 2] =
     [("GARBAGE", Some("'hmm&'"), None), (CONTINUE, None, None)];
-  let mut dummy_options = FitsOptions::new_invalid();
+  let mut dummy_options = HduOptions::new_invalid();
   todo!()
 }

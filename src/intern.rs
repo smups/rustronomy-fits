@@ -40,18 +40,50 @@ mod test_io;
 pub use file_io::*;
 pub use hdu_io::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FitsOptions {
-  conforming: bool,
-  bitpix: i8, //-64 to +64
-  extends: bool,
-  dim: u16,          //number of axes. Max is 999
+#[derive(Debug, Clone, PartialEq)]
+pub struct HduOptions {
+  extension: String, //Type of extension described by this HDU
+  conforming: bool,  //does the file conform to the FITS standard
+  bitpix: i8,        //-64 to +64
+  extends: bool,     //does the file contain extensions
+  dim: u16,          //number of array axes. Max is 999
   shape: Vec<usize>, //each axis max size is undefined
+  /* Random groups options */
+  parameter_count: usize, //number of parameters preceding a group array
+  group_count: usize,     //number of random groups
+  //p_types (should have a custom type)
+  param_scales: Vec<f64>, //rescaling of p_real = p_scale * p + p0
+  param_zeros: Vec<f64>,  //see p_scales
+  /* Table options */
+  row_size: u16,            //number of entries (fields) in each row of table
+  column_start: Vec<usize>, //specifies the column in which each field starts
+  //column_format (should have a custom type)
+  field_scales: Vec<f64>,     //rescaling of t_real = t_scale * t + t0
+  field_zeros: Vec<f64>,      //see t_scales
+  field_null: Vec<String>,    //null value format for each field
+  field_dispfmt: Vec<String>, //display format for each field
 }
 
-impl FitsOptions {
+impl HduOptions {
   pub fn new_invalid() -> Self {
-    FitsOptions { conforming: false, bitpix: 0, extends: false, dim: 0, shape: Vec::new() }
+    HduOptions {
+      extension: String::default(),
+      conforming: false,
+      bitpix: -1,
+      extends: false,
+      dim: 0,
+      shape: Vec::new(),
+      parameter_count: 0,
+      group_count: 0,
+      param_scales: Vec::new(),
+      param_zeros: Vec::new(),
+      row_size: 0,
+      column_start: Vec::new(),
+      field_scales: Vec::new(),
+      field_zeros: Vec::new(),
+      field_null: Vec::new(),
+      field_dispfmt: Vec::new(),
+    }
   }
 }
 
