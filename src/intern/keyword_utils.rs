@@ -23,6 +23,8 @@ use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
 use crate::err::header_err::InvalidHeaderErr;
 
+use super::fits_consts::*;
+
 pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
   match string {
     "T" => Ok(true),
@@ -55,9 +57,55 @@ pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
 //   todo!()
 // }
 
-fn insert_date(value: &str, meta: &mut impl MetaContainer) -> Result<(), InvalidHeaderErr> {
+pub fn set_creation_date(
+  value: &str,
+  meta: &mut impl MetaContainer,
+) -> Result<(), InvalidHeaderErr> {
   meta.insert_tag(&tags::CreationDate(
     value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE_OBS, err))?,
   ));
   Ok(())
+}
+
+pub fn set_modified_date(
+  value: &str,
+  meta: &mut impl MetaContainer,
+) -> Result<(), InvalidHeaderErr> {
+  meta.insert_tag(&tags::LastModified(
+    value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE, err))?,
+  ));
+  Ok(())
+}
+
+pub fn set_author(value: &str, meta: &mut impl MetaContainer) {
+  meta.insert_tag(&tags::Author(value.to_string()));
+  // Add authors to the reference publication if no authors have already been
+  //specified
+  if let Some(refpub) = meta.get_tag_mut::<tags::ReferencePublication>() {
+    if refpub.authors() == "" {
+      refpub.set_authors(value.to_string());
+    }
+  } else {
+    meta.insert_tag(&tags::ReferencePublication::new("", value));
+  }
+}
+
+pub fn set_refpub_title(value: &str, meta: &mut impl MetaContainer) {
+  if let Some(refpub) = meta.get_tag_mut::<tags::ReferencePublication>() {
+    refpub.set_title(value.to_string());
+  } else {
+    meta.insert_tag(&tags::ReferencePublication::new(value, ""));
+  }
+}
+
+pub fn set_telescope(value: &str, meta: &mut impl MetaContainer) {
+  meta.insert_tag(&tags::Telescope(value.to_string()));
+}
+
+pub fn set_instrument(value: &str, meta: &mut impl MetaContainer) {
+  meta.insert_tag(&tags::Instrument(value.to_string()));
+}
+
+pub fn set_object(value: &str, meta: &mut impl MetaContainer) {
+  meta.insert_tag(&tags::Object(value.to_string()));
 }

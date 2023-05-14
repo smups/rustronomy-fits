@@ -312,42 +312,21 @@ fn parse_bitpix(
 fn insert_meta_tag(
   key: &str,
   value: &str,
-  metadata: &mut impl MetaContainer,
+  meta: &mut impl MetaContainer,
 ) -> Result<(), InvalidHeaderErr> {
-  use rustronomy_core::meta::tags;
+  use super::keyword_utils::*;
+  #[cfg_attr(rustfmt, rustfmt_skip)]
   Ok(match key {
     //Reserved kw describing observations
-    DATE_OBS => {
-      metadata.insert_tag(&tags::CreationDate(
-        value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE_OBS, err))?,
-      ));
-    }
-    DATE => {
-      metadata.insert_tag(&tags::LastModified(
-        value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE, err))?,
-      ));
-    }
-    AUTHOR => {
-      metadata.insert_tag(&tags::Author(value.to_string()));
-    }
-    REFERENC => {
-      let author =
-        if let Some(author) = metadata.get_tag::<tags::Author>() { &author.0 } else { "" };
-      metadata.insert_tag(&tags::ReferencePublication::new(value, author));
-    }
-    TELESCOP => {
-      metadata.insert_tag(&tags::Telescope(value.to_string()));
-    }
-    INSTRUME => {
-      metadata.insert_tag(&tags::Instrument(value.to_string()));
-    }
-    OBJECT => {
-      metadata.insert_tag(&tags::Object(value.to_string()));
-    }
+    DATE_OBS => set_creation_date(value, meta)?,
+    DATE => set_modified_date(value, meta)?,
+    AUTHOR => set_author(value, meta),
+    REFERENC => set_refpub_title(value, meta),
+    TELESCOP => set_telescope(value, meta),
+    INSTRUME => set_instrument(value, meta),
+    OBJECT => set_object(value, meta),
     BLANK => (), //do nothing
-    other => {
-      metadata.insert_string_tag(key, value);
-    }
+    other => { meta.insert_string_tag(other, value); }
   })
 }
 

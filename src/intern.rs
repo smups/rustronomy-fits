@@ -55,7 +55,7 @@ impl FitsOptions {
   }
 }
 
-pub mod fits_consts {
+pub(crate) mod fits_consts {
   //Comment separator
   pub const SEP: char = '/';
 
