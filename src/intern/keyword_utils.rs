@@ -25,12 +25,28 @@ use crate::err::header_err::InvalidHeaderErr;
 
 use super::fits_consts::*;
 
+////////////////////////////////////////////////////////////////////////////////
+//                          GENERAL HELPER FUNCTIONS                          //
+////////////////////////////////////////////////////////////////////////////////
+
 #[inline]
 pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
   match string {
     "T" => Ok(true),
     "F" => Ok(false),
     other => Err(format!("cannot parse {other} to bool, expected \"T\" or \"F\"")),
+  }
+}
+
+#[inline]
+/// This function removes the leading and trailing apostrophe's (') that FITS
+/// string types always start and end with. It also removes any trailing whitespace.
+pub fn parse_fits_string(string: &str) -> &str {
+  let string = string.trim();
+  if string.as_bytes()[0] == b'\'' && string.as_bytes()[string.len()] == b'\'' {
+    string[1..(string.len() - 1)].trim()
+  } else {
+    string
   }
 }
 
@@ -57,6 +73,10 @@ pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
 
 //   todo!()
 // }
+
+////////////////////////////////////////////////////////////////////////////////
+//                         TYPED TAG HELPER FUNCTIONS                         //
+////////////////////////////////////////////////////////////////////////////////
 
 #[inline]
 pub fn set_creation_date(
@@ -117,3 +137,7 @@ pub fn set_instrument(value: &str, meta: &mut impl MetaContainer) {
 pub fn set_object(value: &str, meta: &mut impl MetaContainer) {
   meta.insert_tag(&tags::Object(value.to_string()));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//                        FITS OPTIONS HELPER FUNCTIONS                       //
+////////////////////////////////////////////////////////////////////////////////

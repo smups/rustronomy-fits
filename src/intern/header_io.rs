@@ -251,14 +251,14 @@ fn concat<'a>(
         extended_string = Some((key.to_string(), value.to_string()));
       } else {
         //(4b) This is not an extended string kw -> push it
-        metadata.insert_string_tag(key, value);
+        insert_meta_tag(key, value, metadata)?;
       }
     };
   }
 
   //(3) Push the history and commentary kw's
-  metadata.insert_string_tag("HISTORY", &history);
-  metadata.insert_string_tag("COMMENT", &commentary);
+  insert_meta_tag("HISTORY", &history, metadata)?;
+  insert_meta_tag("COMMENT", &commentary, metadata)?;
 
   //(R) the meta vec
   Ok(options)
