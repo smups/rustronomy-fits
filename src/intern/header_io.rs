@@ -40,7 +40,7 @@ pub fn read_header(
   let bytes = read_header_blocks(reader)?;
 
   //(2) Split the raw bytes into Key-Value-Comment triplets
-  let kvc = bytes.chunks_exact(crate::RECORD_SIZE).map(|x| parse_keyword_record(x));
+  let kvc = bytes.chunks_exact(RECORD_SIZE).map(|x| split_keyword_record(x));
 
   //(3) Concatenate the Key-Value-Comment triplets into coherent data
   // -> store this in a metacontainer
@@ -54,7 +54,7 @@ pub fn read_header(
 /// an error occurs. All blocks are appended to a single buffer.
 fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadErr> {
   //container to collect into
-  let mut header_bytes = Vec::with_capacity(crate::BLOCK_SIZE);
+  let mut header_bytes = Vec::with_capacity(BLOCK_SIZE);
 
   //read FITS blocks until we find the final one
   let header_bytes = loop {
@@ -64,7 +64,7 @@ fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadE
         - the last 80 bytes contain the END keyword
       If neither of these is true, continue reading FITS blocks
     */
-    let last_record = &block[crate::BLOCK_SIZE - crate::RECORD_SIZE..crate::BLOCK_SIZE];
+    let last_record = &block[BLOCK_SIZE - RECORD_SIZE..BLOCK_SIZE];
     let last_keyword = std::str::from_utf8(&last_record[0..8]).expect(UTF8_KEYERR).trim();
     if last_record == &[b' '; 80] || last_keyword == END {
       //append the last block and return
@@ -78,7 +78,7 @@ fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadE
 
   //consistency check before returning: assert that we got a multiple of BLOCK_SIZE
   assert!(
-    header_bytes.len() % crate::BLOCK_SIZE == 0,
+    header_bytes.len() % BLOCK_SIZE == 0,
     "irregularly sized FITS block found while reading -- THIS IS A BUG --"
   );
   Ok(header_bytes)
@@ -87,8 +87,8 @@ fn read_header_blocks(reader: &mut impl FitsReader) -> Result<Vec<u8>, FitsReadE
 #[test]
 fn read_single_header_block() {
   use super::test_io::TestIo;
-  let mut test_reader = TestIo::new(&[' ' as u8; crate::BLOCK_SIZE]);
-  assert_eq!(read_header_blocks(&mut test_reader).unwrap(), &[' ' as u8; crate::BLOCK_SIZE]);
+  let mut test_reader = TestIo::new(&[' ' as u8; BLOCK_SIZE]);
+  assert_eq!(read_header_blocks(&mut test_reader).unwrap(), &[' ' as u8; BLOCK_SIZE]);
 }
 
 #[test]
@@ -96,16 +96,16 @@ fn read_multiple_header_blocks() {
   use super::test_io::mock_data;
   let mut test_reader = mock_data::ASTRO_UIT.clone();
   //Header is 4 FITS blocks long
-  const HDR_SIZE: usize = 4 * crate::BLOCK_SIZE;
+  const HDR_SIZE: usize = 4 * BLOCK_SIZE;
   assert_eq!(
-    &read_header_blocks(&mut test_reader).unwrap().len() / crate::BLOCK_SIZE,
-    &mock_data::ASTRO_UIT_BYTES[0..HDR_SIZE].len() / crate::BLOCK_SIZE
+    &read_header_blocks(&mut test_reader).unwrap().len() / BLOCK_SIZE,
+    &mock_data::ASTRO_UIT_BYTES[0..HDR_SIZE].len() / BLOCK_SIZE
   )
 }
 
 /// This function takes a 80-byte FITS keyword-record and splits it into a
 /// keyword, optional value and optional comment.
-fn parse_keyword_record(chunk: &[u8]) -> (&str, Option<&str>, Option<&str>) {
+fn split_keyword_record(chunk: &[u8]) -> (&str, Option<&str>, Option<&str>) {
   //Key is in the first 8 bytes (trim spaces!)
   let key: &str = std::str::from_utf8(&chunk[0..8]).expect(UTF8_KEYERR).trim();
   let (value, comment) = if key == COMMENT || key == HISTORY {
@@ -340,7 +340,7 @@ fn record_split_test() {
   let recs: Vec<(&str, Option<&str>, Option<&str>)> = TEST_BLOCK
     .as_bytes()
     .chunks_exact(crate::RECORD_SIZE)
-    .map(|chunk| parse_keyword_record(chunk))
+    .map(|chunk| split_keyword_record(chunk))
     .collect();
   assert!(recs[0] == ("SIMPLE", Some("T"), Some("FLIGHT22 05Apr96 RSH")));
   assert!(recs[1] == ("BITPIX", Some("16"), Some("SIGNED 16-BIT INTEGERS")));

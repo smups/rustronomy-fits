@@ -56,6 +56,10 @@ impl FitsOptions {
 }
 
 pub(crate) mod fits_consts {
+  //Constants defined by the FITS standard
+  pub const BLOCK_SIZE: usize = 2880;
+  pub const RECORD_SIZE: usize = 80;
+
   //Comment separator
   pub const SEP: char = '/';
 
