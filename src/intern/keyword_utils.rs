@@ -23,9 +23,9 @@ use std::os::unix::fs::chroot;
 
 use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
-use crate::err::header_err::InvalidHeaderErr;
+use crate::err::header_err::{InvalidHeaderErr, UTF8_KEYERR};
 
-use super::fits_consts::*;
+use super::{fits_consts::*, FitsOptions};
 
 ////////////////////////////////////////////////////////////////////////////////
 //                          GENERAL HELPER FUNCTIONS                          //
@@ -52,7 +52,6 @@ pub fn strip_fits_string(string: &str) -> &str {
   }
 }
 
-#[inline]
 pub fn parse_fits_datetime(
   key: &'static str,
   string: &str,
@@ -164,3 +163,128 @@ pub fn set_object(value: &str, meta: &mut impl MetaContainer) {
 ////////////////////////////////////////////////////////////////////////////////
 //                        FITS OPTIONS HELPER FUNCTIONS                       //
 ////////////////////////////////////////////////////////////////////////////////
+
+/// Helper function that parses NAXIS type keywords
+pub fn parse_naxis(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), InvalidHeaderErr> {
+  let idx = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
+  let value = value.ok_or(InvalidHeaderErr::NoValue { key: NAXIS })?;
+  if idx == "" {
+    options.dim = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
+    options.shape = vec![0; options.dim as usize];
+  } else {
+    let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
+    let value = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
+    //index in FITS starts with 1, rust starts with 0 so minus one to convert
+    *options
+      .shape
+      .get_mut(idx - 1)
+      .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? = value;
+  }
+  Ok(())
+}
+
+pub fn parse_simple(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), InvalidHeaderErr> {
+  let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: SIMPLE })?;
+  options.conforming = super::keyword_utils::parse_fits_bool(conforming)
+    .map_err(|err| InvalidHeaderErr::FmtErr { key: SIMPLE, err })?;
+  Ok(())
+}
+
+pub fn parse_extend(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), InvalidHeaderErr> {
+  let extends = value.ok_or(InvalidHeaderErr::NoValue { key: EXTEND })?;
+  options.extends = super::keyword_utils::parse_fits_bool(extends)
+    .map_err(|err| InvalidHeaderErr::FmtErr { key: EXTEND, err })?;
+  Ok(())
+}
+
+pub fn parse_bitpix(
+  key: &str,
+  value: Option<&str>,
+  options: &mut FitsOptions,
+) -> Result<(), InvalidHeaderErr> {
+  options.bitpix = value
+    .ok_or(InvalidHeaderErr::NoValue { key: BITPIX })?
+    .parse()
+    .map_err(|err| InvalidHeaderErr::fmt_err(BITPIX, err))?;
+  Ok(())
+}
+#[test]
+fn naxis_option_test() {
+  //Setup dummy data
+  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 4] = [
+    (NAXIS, Some("3"), None),
+    ("NAXIS1", Some("1000"), None),
+    ("NAXIS2", Some("2250"), None),
+    ("NAXIS3", Some("272"), None),
+  ];
+  const TEST_ANSWER: [usize; 3] = [1000, 2250, 272];
+  let mut input_options = FitsOptions::new_invalid();
+  for (key, value, _comment) in TEST_RECS {
+    parse_naxis(key, value, &mut input_options).unwrap();
+  }
+  assert!(input_options.dim == input_options.shape.len() as u16);
+  assert!(input_options.shape.len() == TEST_ANSWER.len());
+  assert!(input_options.shape == TEST_ANSWER);
+}
+
+#[test]
+fn naxis_oob_test() {
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = ("NAXIS1", Some("1200"), None);
+  let mut input_options = FitsOptions::new_invalid();
+  assert!(matches!(
+    parse_naxis(TEST_RECS.0, TEST_RECS.1, &mut input_options),
+    Err(InvalidHeaderErr::NaxisOob { idx: 1, naxes: 0 })
+  ))
+}
+
+#[test]
+fn invalid_novalue_simple_test() {
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, None, None);
+  let mut input_options = FitsOptions::new_invalid();
+  assert!(matches!(
+    parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options),
+    Err(InvalidHeaderErr::NoValue { .. })
+  ));
+}
+
+#[test]
+fn simple_option_test() {
+  //Setup dummy data
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, Some("T"), None);
+  const TEST_ANSWER: bool = true;
+  let mut input_options = FitsOptions::new_invalid();
+  parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
+  assert!(input_options.conforming == TEST_ANSWER);
+}
+
+#[test]
+fn bitpix_option_test() {
+  //Setup dummy data
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, Some("-32"), None);
+  const TEST_ANSWER: i8 = -32;
+  let mut input_options = FitsOptions::new_invalid();
+  parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
+  assert!(input_options.bitpix == TEST_ANSWER);
+}
+
+#[test]
+fn invalid_novalue_bitpix_test() {
+  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, None, None);
+  let mut input_options = FitsOptions::new_invalid();
+  assert!(matches!(
+    parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options),
+    Err(InvalidHeaderErr::NoValue { .. })
+  ));
+}

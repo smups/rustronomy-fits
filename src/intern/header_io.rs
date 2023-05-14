@@ -18,7 +18,7 @@
   (1) Resident of the Kingdom of the Netherlands; agreement between licensor and
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
-use rustronomy_core::{prelude::MetaContainer, universal_containers::MetaOnly};
+use rustronomy_core::prelude::MetaContainer;
 
 use crate::{
   api::io::*,
@@ -195,7 +195,7 @@ fn concat<'a>(
       //should push its completed value to the record list since we have now
       //encountered a non-CONTINUE keyword. We should also reset the value of
       //extended_string to None (the mem::take fn does this).
-      insert_meta_tag(&current_string.0, strip_fits_string(&current_string.1), metadata)?;
+      set_meta_tag(&current_string.0, strip_fits_string(&current_string.1), metadata)?;
     }
 
     /*
@@ -203,22 +203,22 @@ fn concat<'a>(
      */
     if key.starts_with(NAXIS) {
       //(a) NAXIS{n}
-      parse_naxis(key, value, &mut options)?;
+      super::keyword_utils::parse_naxis(key, value, &mut options)?;
       continue;
     }
     if key == SIMPLE {
       //(b) SIMPLE
-      parse_simple(key, value, &mut options)?;
+      super::keyword_utils::parse_simple(key, value, &mut options)?;
       continue;
     }
     if key == BITPIX {
       //(c) BITPIX
-      parse_bitpix(key, value, &mut options)?;
+      super::keyword_utils::parse_bitpix(key, value, &mut options)?;
       continue;
     }
     if key == EXTEND {
       //(d) EXTEND
-      parse_extend(key, value, &mut options)?;
+      super::keyword_utils::parse_extend(key, value, &mut options)?;
       continue;
     }
 
@@ -251,81 +251,20 @@ fn concat<'a>(
         extended_string = Some((key.to_string(), value.to_string()));
       } else {
         //(4b) This is not an extended string kw -> push it
-        insert_meta_tag(key, strip_fits_string(value), metadata)?;
+        set_meta_tag(key, strip_fits_string(value), metadata)?;
       }
     };
   }
 
   //(3) Push the history and commentary kw's
-  insert_meta_tag("HISTORY", &history, metadata)?;
-  insert_meta_tag("COMMENT", &commentary, metadata)?;
+  set_meta_tag("HISTORY", &history, metadata)?;
+  set_meta_tag("COMMENT", &commentary, metadata)?;
 
   //(R) the meta vec
   Ok(options)
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////////////// CONCAT HELPER FUNCTIONS ///////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-/// Helper function that parses NAXIS type keywords
-fn parse_naxis(
-  key: &str,
-  value: Option<&str>,
-  options: &mut FitsOptions,
-) -> Result<(), InvalidHeaderErr> {
-  let idx = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
-  let value = value.ok_or(InvalidHeaderErr::NoValue { key: NAXIS })?;
-  if idx == "" {
-    options.dim = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
-    options.shape = vec![0; options.dim as usize];
-  } else {
-    let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
-    let value = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
-    //index in FITS starts with 1, rust starts with 0 so minus one to convert
-    *options
-      .shape
-      .get_mut(idx - 1)
-      .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? = value;
-  }
-  Ok(())
-}
-
-fn parse_simple(
-  key: &str,
-  value: Option<&str>,
-  options: &mut FitsOptions,
-) -> Result<(), InvalidHeaderErr> {
-  let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: SIMPLE })?;
-  options.conforming = super::keyword_utils::parse_fits_bool(conforming)
-    .map_err(|err| InvalidHeaderErr::FmtErr { key: SIMPLE, err })?;
-  Ok(())
-}
-
-fn parse_extend(
-  key: &str,
-  value: Option<&str>,
-  options: &mut FitsOptions,
-) -> Result<(), InvalidHeaderErr> {
-  let extends = value.ok_or(InvalidHeaderErr::NoValue { key: EXTEND })?;
-  options.extends = super::keyword_utils::parse_fits_bool(extends)
-    .map_err(|err| InvalidHeaderErr::FmtErr { key: EXTEND, err })?;
-  Ok(())
-}
-
-fn parse_bitpix(
-  key: &str,
-  value: Option<&str>,
-  options: &mut FitsOptions,
-) -> Result<(), InvalidHeaderErr> {
-  options.bitpix = value
-    .ok_or(InvalidHeaderErr::NoValue { key: BITPIX })?
-    .parse()
-    .map_err(|err| InvalidHeaderErr::fmt_err(BITPIX, err))?;
-  Ok(())
-}
-
-fn insert_meta_tag(
+fn set_meta_tag(
   key: &str,
   value: &str,
   meta: &mut impl MetaContainer,
@@ -405,7 +344,7 @@ fn continue_record_test() {
     (END, None, None),
   ];
   const TEST_ANSWER: &str = "'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean viverra rutrum ante nec facilisis. Praesent rutrum ipsum a volutpat lacinia. In hac habitasse platea dictumst. Nulla et volutpat urna. Phasellus luctus congue est, id interdum enim aliquam et. Morbi et ipsum mi. Maecenas pretium a metus sit amet semper. Suspendisse non scelerisque libero. Pellentesque sit amet lectus ullamcorper, ullamcorper velit non, feugiat lacus. Vestibulum pellentesque fringilla ex at scelerisque. Integer vitae tincidunt tortor.'";
-  let mut test_meta = MetaOnly::default();
+  let mut test_meta = rustronomy_core::universal_containers::MetaOnly::default();
   //run concat on the test keys!
   concat(TEST_RECS.into_iter(), &mut test_meta).unwrap();
   dbg!(&test_meta);
@@ -432,73 +371,4 @@ fn invalid_novalue_continue_test() {
     [("GARBAGE", Some("'hmm&'"), None), (CONTINUE, None, None)];
   let mut dummy_options = FitsOptions::new_invalid();
   todo!()
-}
-
-#[test]
-fn naxis_option_test() {
-  //Setup dummy data
-  const TEST_RECS: [(&str, Option<&str>, Option<&str>); 4] = [
-    (NAXIS, Some("3"), None),
-    ("NAXIS1", Some("1000"), None),
-    ("NAXIS2", Some("2250"), None),
-    ("NAXIS3", Some("272"), None),
-  ];
-  const TEST_ANSWER: [usize; 3] = [1000, 2250, 272];
-  let mut input_options = FitsOptions::new_invalid();
-  for (key, value, _comment) in TEST_RECS {
-    parse_naxis(key, value, &mut input_options).unwrap();
-  }
-  assert!(input_options.dim == input_options.shape.len() as u16);
-  assert!(input_options.shape.len() == TEST_ANSWER.len());
-  assert!(input_options.shape == TEST_ANSWER);
-}
-
-#[test]
-fn naxis_oob_test() {
-  const TEST_RECS: (&str, Option<&str>, Option<&str>) = ("NAXIS1", Some("1200"), None);
-  let mut input_options = FitsOptions::new_invalid();
-  assert!(matches!(
-    parse_naxis(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(InvalidHeaderErr::NaxisOob { idx: 1, naxes: 0 })
-  ))
-}
-
-#[test]
-fn invalid_novalue_simple_test() {
-  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, None, None);
-  let mut input_options = FitsOptions::new_invalid();
-  assert!(matches!(
-    parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(InvalidHeaderErr::NoValue { .. })
-  ));
-}
-
-#[test]
-fn simple_option_test() {
-  //Setup dummy data
-  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, Some("T"), None);
-  const TEST_ANSWER: bool = true;
-  let mut input_options = FitsOptions::new_invalid();
-  parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
-  assert!(input_options.conforming == TEST_ANSWER);
-}
-
-#[test]
-fn bitpix_option_test() {
-  //Setup dummy data
-  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, Some("-32"), None);
-  const TEST_ANSWER: i8 = -32;
-  let mut input_options = FitsOptions::new_invalid();
-  parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
-  assert!(input_options.bitpix == TEST_ANSWER);
-}
-
-#[test]
-fn invalid_novalue_bitpix_test() {
-  const TEST_RECS: (&str, Option<&str>, Option<&str>) = (BITPIX, None, None);
-  let mut input_options = FitsOptions::new_invalid();
-  assert!(matches!(
-    parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options),
-    Err(InvalidHeaderErr::NoValue { .. })
-  ));
 }
