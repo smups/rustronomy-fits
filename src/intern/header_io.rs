@@ -29,28 +29,7 @@ use crate::{
 };
 
 use super::FitsOptions;
-
-//Comment separator
-const SEP: char = '/';
-
-//Keywords that correspond to FITS options
-const SIMPLE: &str = "SIMPLE";
-const BITPIX: &str = "BITPIX";
-const NAXIS: &str = "NAXIS";
-const END: &str = "END";
-const CONTINUE: &str = "CONTINUE";
-const COMMENT: &str = "COMMENT";
-const HISTORY: &str = "HISTORY";
-const BLANK: &str = "BLANK";
-
-//FITS keywords that correspond to "protected" rustronomy keywords
-const DATE: &str = "DATE";
-const DATE_OBS: &str = "DATE-OBS";
-const AUTHOR: &str = "AUTHOR";
-const REFERENC: &str = "REFERENC";
-const TELESCOP: &str = "TELESCOP";
-const INSTRUME: &str = "INSTRUME";
-const OBJECT: &str = "OBJECT";
+use super::fits_consts::*;
 
 /// Reads header of a FITS Header-Data-Unit and stores all encountered tags in
 /// the supplied metadata container.

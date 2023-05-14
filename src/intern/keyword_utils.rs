@@ -19,6 +19,10 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
+use rustronomy_core::{prelude::MetaContainer, meta::tags};
+
+use crate::err::header_err::InvalidHeaderErr;
+
 pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
   match string {
     "T" => Ok(true),
@@ -50,3 +54,10 @@ pub fn parse_fits_bool(string: &str) -> Result<bool, String> {
 
 //   todo!()
 // }
+
+fn insert_date(value: &str, meta: &mut impl MetaContainer) -> Result<(), InvalidHeaderErr> {
+  meta.insert_tag(&tags::CreationDate(
+    value.parse().map_err(|err| InvalidHeaderErr::fmt_err(DATE_OBS, err))?,
+  ));
+  Ok(())
+}

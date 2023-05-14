@@ -54,3 +54,27 @@ impl FitsOptions {
     FitsOptions { conforming: false, bitpix: 0, extends: false, dim: 0, shape: Vec::new() }
   }
 }
+
+pub mod fits_consts {
+  //Comment separator
+  pub const SEP: char = '/';
+
+  //Keywords that correspond to FITS options
+  pub const SIMPLE: &str = "SIMPLE";
+  pub const BITPIX: &str = "BITPIX";
+  pub const NAXIS: &str = "NAXIS";
+  pub const END: &str = "END";
+  pub const CONTINUE: &str = "CONTINUE";
+  pub const COMMENT: &str = "COMMENT";
+  pub const HISTORY: &str = "HISTORY";
+  pub const BLANK: &str = "BLANK";
+
+  //FITS keywords that correspond to keywords that rustronomy understands
+  pub const DATE: &str = "DATE";
+  pub const DATE_OBS: &str = "DATE-OBS";
+  pub const AUTHOR: &str = "AUTHOR";
+  pub const REFERENC: &str = "REFERENC";
+  pub const TELESCOP: &str = "TELESCOP";
+  pub const INSTRUME: &str = "INSTRUME";
+  pub const OBJECT: &str = "OBJECT";
+}
