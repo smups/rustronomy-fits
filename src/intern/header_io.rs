@@ -276,7 +276,7 @@ fn parse_naxis(
     options.shape = vec![0; options.dim as usize];
   } else {
     let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
-    let value: u16 = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
+    let value = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
     //index in FITS starts with 1, rust starts with 0 so minus one to convert
     *options
       .shape
@@ -427,9 +427,9 @@ fn naxis_option_test() {
     ("NAXIS2", Some("2250"), None),
     ("NAXIS3", Some("272"), None),
   ];
-  const TEST_ANSWER: [u16; 3] = [1000, 2250, 272];
+  const TEST_ANSWER: [usize; 3] = [1000, 2250, 272];
   let mut input_options = FitsOptions::new_invalid();
-  for (key, value, comment) in TEST_RECS {
+  for (key, value, _comment) in TEST_RECS {
     parse_naxis(key, value, &mut input_options).unwrap();
   }
   assert!(input_options.dim == input_options.shape.len() as u16);
