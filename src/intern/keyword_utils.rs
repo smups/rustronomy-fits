@@ -19,8 +19,6 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use std::os::unix::fs::chroot;
-
 use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
 use crate::err::header_err::{InvalidHeaderErr, UTF8_KEYERR};
