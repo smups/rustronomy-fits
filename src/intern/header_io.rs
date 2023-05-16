@@ -202,23 +202,26 @@ fn concat<'a>(
      * (2) Parse the FITS-options
      */
     if key.starts_with(NAXIS) {
-      //(a) NAXIS{n}
       super::keyword_utils::parse_naxis(key, value, &mut options)?;
       continue;
-    }
-    if key == SIMPLE {
-      //(b) SIMPLE
+    /* Boolean keys */
+    } else if key == SIMPLE {
       super::keyword_utils::parse_simple(key, value, &mut options)?;
       continue;
-    }
-    if key == BITPIX {
-      //(c) BITPIX
-      super::keyword_utils::parse_bitpix(key, value, &mut options)?;
-      continue;
-    }
-    if key == EXTEND {
-      //(d) EXTEND
+    } else if key == EXTEND {
       super::keyword_utils::parse_extend(key, value, &mut options)?;
+      continue;
+    } else if key == GROUPS {
+      super::keyword_utils::parse_groups(key, value, &mut options)?;
+      continue;
+    } else if key == INHERIT {
+      super::keyword_utils::parse_inherit(key, value, &mut options)?;
+      continue;
+    } else if key == SIMPLE {
+      super::keyword_utils::parse_simple(key, value, &mut options)?;
+      continue;
+    } else if key == BITPIX {
+      super::keyword_utils::parse_bitpix(key, value, &mut options)?;
       continue;
     }
 

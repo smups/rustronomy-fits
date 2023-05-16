@@ -185,25 +185,36 @@ pub fn parse_naxis(
   Ok(())
 }
 
-pub fn parse_simple(
-  key: &str,
-  value: Option<&str>,
-  options: &mut HduOptions,
-) -> Result<(), InvalidHeaderErr> {
-  let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: SIMPLE })?;
-  options.conforming = super::keyword_utils::parse_fits_bool(conforming)
-    .map_err(|err| InvalidHeaderErr::FmtErr { key: SIMPLE, err })?;
-  Ok(())
+macro_rules! create_parse_bool_fn {
+  ($(($fn_name:ident, $base_key:ident)),*) => {$(
+    pub fn $fn_name(
+      key: &str,
+      value: Option<&str>,
+      options: &mut HduOptions,
+    ) -> Result<(), InvalidHeaderErr> {
+      let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
+      options.conforming = super::keyword_utils::parse_fits_bool(conforming)
+        .map_err(|err| InvalidHeaderErr::FmtErr { key: $base_key, err })?;
+      Ok(())
+    }
+  )*};
 }
 
-pub fn parse_extend(
+create_parse_bool_fn!(
+  (parse_simple, SIMPLE),
+  (parse_extend, EXTEND),
+  (parse_groups, GROUPS),
+  (parse_inherit, INHERIT)
+);
+
+pub fn parse_gcount(
   key: &str,
   value: Option<&str>,
   options: &mut HduOptions,
 ) -> Result<(), InvalidHeaderErr> {
-  let extends = value.ok_or(InvalidHeaderErr::NoValue { key: EXTEND })?;
-  options.extends = super::keyword_utils::parse_fits_bool(extends)
-    .map_err(|err| InvalidHeaderErr::FmtErr { key: EXTEND, err })?;
+  let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: GCOUNT })?;
+  options.conforming = super::keyword_utils::parse_fits_bool(conforming)
+    .map_err(|err| InvalidHeaderErr::FmtErr { key: GCOUNT, err })?;
   Ok(())
 }
 
