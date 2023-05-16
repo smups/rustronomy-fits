@@ -100,11 +100,34 @@ pub(crate) mod fits_consts {
   pub const BITPIX: &str = "BITPIX";
   pub const NAXIS: &str = "NAXIS";
   pub const END: &str = "END";
+  pub const GCOUNT: &str = "GCOUNT";
+  pub const PCOUNT: &str = "PCOUNT";
+  pub const GROUPS: &str = "GROUPS";
+  pub const PTYPE: &str = "PTYPE";
+  pub const PSCAL: &str = "PSCAL";
+  pub const PZERO: &str = "PZERO";
+  pub const TFIELDS: &str = "TFIELDS";
+  pub const TBCOL: &str = "TBCOL";
+  pub const TFORM: &str = "TFORM";
+  pub const TTYPE: &str = "TTYPE";
+  pub const TUNIT: &str = "TUNIT";
+  pub const TSCAL: &str = "TSCAL";
+  pub const TZERO: &str = "TZERO";
+  pub const TNULL: &str = "TNULL";
+  pub const TDISP: &str = "TDISP";
+  pub const THEAP: &str = "THEAP";
+  pub const EXTEND: &str = "EXTEND";
+  pub const INHERIT: &str = "INHERIT";
+  pub const XTENSION: &str = "EXTENSION";
+  pub const BSCALE: &str = "BSCALE";
+  pub const BZERO: &str = "BZERO";
+  pub const BUNIT: &str = "BUNIT";
+  pub const DATASUM: &str = "DATASUM";
+  pub const CHECKSUM: &str = "CHECKSUM";
   pub const CONTINUE: &str = "CONTINUE";
   pub const COMMENT: &str = "COMMENT";
   pub const HISTORY: &str = "HISTORY";
   pub const BLANK: &str = "BLANK";
-  pub const EXTEND: &str = "EXTEND";
 
   //FITS keywords that correspond to keywords that rustronomy understands
   pub const DATE: &str = "DATE";
@@ -114,4 +137,6 @@ pub(crate) mod fits_consts {
   pub const TELESCOP: &str = "TELESCOP";
   pub const INSTRUME: &str = "INSTRUME";
   pub const OBJECT: &str = "OBJECT";
+  pub const ORIGIN: &str = "ORIGIN";
+  pub const OBSERVER: &str = "OBSERVER";
 }
