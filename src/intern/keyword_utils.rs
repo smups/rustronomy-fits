@@ -185,7 +185,7 @@ pub fn parse_naxis(
   Ok(())
 }
 
-macro_rules! create_parse_bool_fn {
+macro_rules! create_parse_naxis_like_fn {
   ($(($fn_name:ident, $base_key:ident)),*) => {$(
     #[inline]
     pub fn $fn_name(
@@ -193,8 +193,35 @@ macro_rules! create_parse_bool_fn {
       value: Option<&str>,
       options: &mut HduOptions,
     ) -> Result<(), InvalidHeaderErr> {
+      let idx = std::str::from_utf8(&key.as_bytes()[$base_key.len()..]).expect(UTF8_KEYERR);
+      let value = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
+      if idx == "" {
+        options.dim = value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
+        options.shape = vec![0; options.dim as usize];
+      } else {
+        let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
+        let value = value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
+        //index in FITS starts with 1, rust starts with 0 so minus one to convert
+        *options
+          .shape
+          .get_mut(idx - 1)
+          .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? = value;
+      }
+      Ok(())
+    }
+  )*};
+}
+
+macro_rules! create_parse_bool_fn {
+  ($(($base_key:ident, $fn_name:ident, $field:ident)),*) => {$(
+    #[inline]
+    pub fn $fn_name(
+      _key: &str,
+      value: Option<&str>,
+      options: &mut HduOptions,
+    ) -> Result<(), InvalidHeaderErr> {
       let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
-      options.conforming = super::keyword_utils::parse_fits_bool(conforming)
+      options.$field = super::keyword_utils::parse_fits_bool(conforming)
         .map_err(|err| InvalidHeaderErr::FmtErr { key: $base_key, err })?;
       Ok(())
     }
@@ -202,22 +229,34 @@ macro_rules! create_parse_bool_fn {
 }
 
 create_parse_bool_fn!(
-  (parse_simple, SIMPLE),
-  (parse_extend, EXTEND),
-  (parse_groups, GROUPS),
-  (parse_inherit, INHERIT)
+  (SIMPLE, parse_simple, conforming),
+  (EXTEND, parse_extend, extends),
+  (GROUPS, parse_groups, has_groups),
+  (INHERIT, parse_inherit, inherits_main)
 );
 
-pub fn parse_gcount(
-  key: &str,
-  value: Option<&str>,
-  options: &mut HduOptions,
-) -> Result<(), InvalidHeaderErr> {
-  let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: GCOUNT })?;
-  options.conforming = super::keyword_utils::parse_fits_bool(conforming)
-    .map_err(|err| InvalidHeaderErr::FmtErr { key: GCOUNT, err })?;
-  Ok(())
+macro_rules! create_parse_number_fn {
+  ($(($base_key:ident, $fn_name:ident, $field:ident, $type:ty)),*) => {$(
+    #[inline]
+    pub fn $fn_name(
+      _key: &str,
+      value: Option<&str>,
+      options: &mut HduOptions,
+    ) -> Result<(), InvalidHeaderErr> {
+      let number = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
+      options.$field = str::parse::<$type>(number.trim())
+        .map_err(|err| InvalidHeaderErr::FmtErr { key: $base_key, err: format!("{err}") })?;
+      Ok(())
+    }
+  )*};
 }
+
+create_parse_number_fn!(
+  (GCOUNT, parse_gcount, group_count, u32),
+  (PCOUNT, parse_pcount, parameter_count, u32),
+  (THEAP, parse_theap, heap_size, u32),
+  (TFIELDS, parse_tfields, row_size, u32)
+);
 
 pub fn parse_bitpix(
   key: &str,
@@ -239,12 +278,12 @@ fn naxis_option_test() {
     ("NAXIS2", Some("2250"), None),
     ("NAXIS3", Some("272"), None),
   ];
-  const TEST_ANSWER: [usize; 3] = [1000, 2250, 272];
+  const TEST_ANSWER: [u32; 3] = [1000, 2250, 272];
   let mut input_options = HduOptions::new_invalid();
   for (key, value, _comment) in TEST_RECS {
     parse_naxis(key, value, &mut input_options).unwrap();
   }
-  assert!(input_options.dim == input_options.shape.len() as u16);
+  assert!(input_options.dim == input_options.shape.len() as u32);
   assert!(input_options.shape.len() == TEST_ANSWER.len());
   assert!(input_options.shape == TEST_ANSWER);
 }

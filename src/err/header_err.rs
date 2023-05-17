@@ -55,7 +55,7 @@ impl std::error::Error for HeaderReadErr {}
 #[derive(Debug)]
 pub enum InvalidHeaderErr {
   NoValue { key: &'static str },
-  NaxisOob { idx: usize, naxes: u16 },
+  NaxisOob { idx: usize, naxes: u32 },
   FmtErr { key: &'static str, err: String },
 }
 
