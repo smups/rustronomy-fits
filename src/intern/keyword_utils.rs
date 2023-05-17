@@ -187,6 +187,7 @@ pub fn parse_naxis(
 
 macro_rules! create_parse_bool_fn {
   ($(($fn_name:ident, $base_key:ident)),*) => {$(
+    #[inline]
     pub fn $fn_name(
       key: &str,
       value: Option<&str>,

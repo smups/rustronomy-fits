@@ -199,51 +199,41 @@ fn concat<'a>(
     }
 
     /*
-     * (2) Parse the FITS-options
-     */
-    if key.starts_with(NAXIS) {
-      super::keyword_utils::parse_naxis(key, value, &mut options)?;
-      continue;
-    /* Boolean keys */
-    } else if key == SIMPLE {
-      super::keyword_utils::parse_simple(key, value, &mut options)?;
-      continue;
-    } else if key == EXTEND {
-      super::keyword_utils::parse_extend(key, value, &mut options)?;
-      continue;
-    } else if key == GROUPS {
-      super::keyword_utils::parse_groups(key, value, &mut options)?;
-      continue;
-    } else if key == INHERIT {
-      super::keyword_utils::parse_inherit(key, value, &mut options)?;
-      continue;
-    } else if key == SIMPLE {
-      super::keyword_utils::parse_simple(key, value, &mut options)?;
-      continue;
-    } else if key == BITPIX {
-      super::keyword_utils::parse_bitpix(key, value, &mut options)?;
-      continue;
+    * (2) Parse the FITS-options
+    */
+    macro_rules! set_fits_option {
+      ($parse_fn:ident) => {{
+        super::keyword_utils::$parse_fn(key, value, &mut options)?;
+        continue;
+      }};
+    }
+
+    match key {
+      //Simple boolean keys
+      SIMPLE => set_fits_option!(parse_simple),
+      EXTEND => set_fits_option!(parse_extend),
+      GROUPS => set_fits_option!(parse_groups),
+      INHERIT => set_fits_option!(parse_inherit),
+      //Number keys
+      _ if key.starts_with(NAXIS) => set_fits_option!(parse_naxis),
+      //Special keys
+      BITPIX => set_fits_option!(parse_bitpix),
+      COMMENT => {
+        commentary.push_str(value.unwrap_or(""));
+        continue;
+      },
+      HISTORY => {
+        history.push_str(value.unwrap_or(""));
+        continue;
+      },
+      END => {
+        break;
+      },
+      _ => () //Do nothing
     }
 
     /*
-     * (3) Deal with commentary keywords
-     */
-    if key == COMMENT {
-      commentary.push_str(value.unwrap_or(""));
-      continue;
-    }
-    if key == HISTORY {
-      history.push_str(value.unwrap_or(""));
-      continue;
-    }
-
-    /* (3b) end the keyword parsing once we hit the END kw */
-    if key == END {
-      break;
-    }
-
-    /*
-     * (4) At this point, we're just working with a normal keyword. If it's an
+     * (3) At this point, we're just working with a normal keyword. If it's an
      * extended string keyword, we should set extended_keyword. If not, we simply
      * push it to the meta list. We should also take care to ignore value-less
      * keywords.
@@ -259,7 +249,7 @@ fn concat<'a>(
     };
   }
 
-  //(3) Push the history and commentary kw's
+  //(4) Push the history and commentary kw's
   set_meta_tag("HISTORY", &history, metadata)?;
   set_meta_tag("COMMENT", &commentary, metadata)?;
 
