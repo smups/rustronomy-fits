@@ -162,31 +162,8 @@ pub fn set_object(value: &str, meta: &mut impl MetaContainer) {
 //                        FITS OPTIONS HELPER FUNCTIONS                       //
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Helper function that parses NAXIS type keywords
-pub fn parse_naxis(
-  key: &str,
-  value: Option<&str>,
-  options: &mut HduOptions,
-) -> Result<(), InvalidHeaderErr> {
-  let idx = std::str::from_utf8(&key.as_bytes()[NAXIS.len()..key.len()]).expect(UTF8_KEYERR);
-  let value = value.ok_or(InvalidHeaderErr::NoValue { key: NAXIS })?;
-  if idx == "" {
-    options.dim = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
-    options.shape = vec![0; options.dim as usize];
-  } else {
-    let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
-    let value = value.parse().map_err(|err| InvalidHeaderErr::fmt_err(NAXIS, err))?;
-    //index in FITS starts with 1, rust starts with 0 so minus one to convert
-    *options
-      .shape
-      .get_mut(idx - 1)
-      .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? = value;
-  }
-  Ok(())
-}
-
 macro_rules! create_parse_naxis_like_fn {
-  ($(($fn_name:ident, $base_key:ident)),*) => {$(
+  ($(($base_key:ident, $fn_name:ident, $scalar_field:ident, $vec_field:ident)),*) => {$(
     #[inline]
     pub fn $fn_name(
       key: &str,
@@ -196,21 +173,25 @@ macro_rules! create_parse_naxis_like_fn {
       let idx = std::str::from_utf8(&key.as_bytes()[$base_key.len()..]).expect(UTF8_KEYERR);
       let value = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
       if idx == "" {
-        options.dim = value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
-        options.shape = vec![0; options.dim as usize];
+        options.$scalar_field = value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
+        options.$vec_field = vec![0; options.$scalar_field as usize];
       } else {
         let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
         let value = value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
         //index in FITS starts with 1, rust starts with 0 so minus one to convert
         *options
-          .shape
+          .$vec_field
           .get_mut(idx - 1)
-          .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.dim })? = value;
+          .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.$scalar_field })? = value;
       }
       Ok(())
     }
   )*};
 }
+
+create_parse_naxis_like_fn!(
+  (NAXIS, parse_naxis, n_axes, shape)
+);
 
 macro_rules! create_parse_bool_fn {
   ($(($base_key:ident, $fn_name:ident, $field:ident)),*) => {$(
@@ -269,6 +250,7 @@ pub fn parse_bitpix(
     .map_err(|err| InvalidHeaderErr::fmt_err(BITPIX, err))?;
   Ok(())
 }
+
 #[test]
 fn naxis_option_test() {
   //Setup dummy data
@@ -283,7 +265,7 @@ fn naxis_option_test() {
   for (key, value, _comment) in TEST_RECS {
     parse_naxis(key, value, &mut input_options).unwrap();
   }
-  assert!(input_options.dim == input_options.shape.len() as u32);
+  assert!(input_options.n_axes == input_options.shape.len() as u32);
   assert!(input_options.shape.len() == TEST_ANSWER.len());
   assert!(input_options.shape == TEST_ANSWER);
 }

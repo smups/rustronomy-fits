@@ -48,7 +48,7 @@ pub struct HduOptions {
   has_groups: bool,           //does the file contain groups
   inherits_main: bool,        //does the file inherit the metadata from the primary HDU
   bitpix: i8,                 //data type of array
-  dim: u32,                   //number of array axes. Max is 999
+  n_axes: u32,                //number of array axes. Max is 999
   shape: Vec<u32>,            //each axis max size is undefined
   /* Random groups options */
   parameter_count: u32,       //number of parameters preceding a group array
@@ -76,7 +76,7 @@ impl HduOptions {
       has_groups: false,
       inherits_main: false,
       bitpix: -1,
-      dim: 0,
+      n_axes: 0,
       shape: Vec::new(),
       parameter_count: 0,
       group_count: 0,
