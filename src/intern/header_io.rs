@@ -199,8 +199,8 @@ fn concat<'a>(
     }
 
     /*
-    * (2) Parse the FITS-options
-    */
+     * (2) Parse the FITS-options
+     */
     macro_rules! set_fits_option {
       ($parse_fn:ident) => {{
         super::keyword_utils::$parse_fn(key, value, &mut options)?;
@@ -221,15 +221,15 @@ fn concat<'a>(
       COMMENT => {
         commentary.push_str(value.unwrap_or(""));
         continue;
-      },
+      }
       HISTORY => {
         history.push_str(value.unwrap_or(""));
         continue;
-      },
+      }
       END => {
         break;
-      },
-      _ => () //Do nothing
+      }
+      _ => (), //Do nothing
     }
 
     /*
