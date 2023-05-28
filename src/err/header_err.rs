@@ -58,6 +58,8 @@ pub enum InvalidHeaderErr {
   NaxisOob { idx: usize, naxes: u32 },
   FmtErr { key: &'static str, err: String },
   SimpleErr,
+  UnsupportedExtension { xt: &'static str },
+  InvalidExtension { xt: String },
 }
 
 impl InvalidHeaderErr {
@@ -78,6 +80,8 @@ impl std::fmt::Display for InvalidHeaderErr {
       NaxisOob { idx, naxes } => write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, naxes),
       FmtErr { key, err } => write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", key, err),
       SimpleErr => write!(f, "non-conforming FITS files are not supported (SIMPLE = F)."),
+      UnsupportedExtension { xt } => write!(f, "the extension \"{xt}\" is currently unsupported by rustronomy-fits"),
+      InvalidExtension { xt } => write!(f, "malformed file: \"{xt}\" is not a valid FITS extension"),
     }
   }
 }
