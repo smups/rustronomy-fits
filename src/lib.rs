@@ -19,17 +19,6 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-//Implementation details
-/*
-mod bitpix;
-mod err;
-mod extensions;
-mod fits;
-mod header;
-mod header_data_unit;
-mod raw;
-*/
-
 //errors
 pub mod err;
 
