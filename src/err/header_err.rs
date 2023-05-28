@@ -58,7 +58,7 @@ pub enum InvalidHeaderErr {
   NaxisOob { idx: usize, naxes: u32 },
   FmtErr { key: &'static str, err: String },
   SimpleErr,
-  UnsupportedExtension { xt: &'static str },
+  UnsupportedExtension { xt: String },
   InvalidExtension { xt: String },
 }
 

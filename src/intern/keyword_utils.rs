@@ -213,6 +213,25 @@ pub fn parse_simple(
   Ok(())
 }
 
+#[inline]
+pub fn parse_extension(
+  _key: &str,
+  value: Option<&str>,
+  options: &mut HduOptions,
+) -> Result<(), InvalidHeaderErr> {
+  let raw_str = value.ok_or(InvalidHeaderErr::NoValue { key: XTENSION })?;
+  let xtension = match raw_str {
+    XT_IMAGE | XT_IUEIMAGE => Extension::Image,
+    XT_TABLE | XT_BINTABLE | XT_A3DTABLE | XT_DUMP | XT_FOREIGN => {
+      return Err(InvalidHeaderErr::UnsupportedExtension { xt: raw_str.to_string() })
+    }, other => {
+      return Err(InvalidHeaderErr::InvalidExtension { xt: other.to_string() })
+    }
+  };
+  options.set_extension(xtension);
+  Ok(())
+}
+
 macro_rules! create_parse_bool_fn {
   ($(($base_key:ident, $fn_name:ident, $field:ident)),*) => {$(
     #[inline]

@@ -217,6 +217,7 @@ fn concat<'a>(
       //Number keys
       _ if key.starts_with(NAXIS) => set_fits_option!(parse_naxis),
       //Special keys
+      XTENSION => set_fits_option!(parse_extension),
       BITPIX => set_fits_option!(parse_bitpix),
       COMMENT => {
         commentary.push_str(value.unwrap_or(""));
