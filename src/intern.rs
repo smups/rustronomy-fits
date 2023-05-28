@@ -40,6 +40,15 @@ pub mod fits_consts {
   //Comment separator
   pub const SEP: char = '/';
 
+  //Valid values for the XTENSION keyword
+  pub const XT_IMAGE: &str = "IMAGE   ";
+  pub const XT_TABLE: &str = "TABLE   ";
+  pub const XT_BINTABLE: &str = "BINTABLE";
+  pub const XT_IUEIMAGE: &str = "IUEIMAGE";
+  pub const XT_A3DTABLE: &str = "A3DTABLE";
+  pub const XT_FOREIGN: &str = "FOREIGN ";
+  pub const XT_DUMP: &str = "DUMP    ";
+
   //Keywords that correspond to FITS options
   pub const SIMPLE: &str = "SIMPLE";
   pub const BITPIX: &str = "BITPIX";

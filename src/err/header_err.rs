@@ -57,6 +57,7 @@ pub enum InvalidHeaderErr {
   NoValue { key: &'static str },
   NaxisOob { idx: usize, naxes: u32 },
   FmtErr { key: &'static str, err: String },
+  SimpleErr,
 }
 
 impl InvalidHeaderErr {
@@ -71,14 +72,12 @@ impl InvalidHeaderErr {
 impl std::fmt::Display for InvalidHeaderErr {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     use InvalidHeaderErr::*;
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     match self {
       NoValue { key } => write!(f, "encountered a {key} keyword without a value."),
-      NaxisOob { idx, naxes } => {
-        write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, naxes)
-      }
-      FmtErr { key, err } => {
-        write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", key, err)
-      }
+      NaxisOob { idx, naxes } => write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, naxes),
+      FmtErr { key, err } => write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", key, err),
+      SimpleErr => write!(f, "non-conforming FITS files are not supported (SIMPLE = F)."),
     }
   }
 }

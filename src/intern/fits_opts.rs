@@ -21,10 +21,24 @@
 
 use getset::{Getters, MutGetters, Setters};
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+#[non_exhaustive]
+pub enum Extension {
+  PrimaryHdu,
+  Image,
+  Table,
+  BinTable,
+  Foreign,
+  #[default]
+  Dump
+  //NRAO AIPS binary tables are currently unsupported!
+}
+
 #[derive(Debug, Clone, PartialEq, Getters, Setters, MutGetters)]
 #[getset(get = "pub", set = "pub", get_mut = "pub")]
 pub struct HduOptions {
-  extension: String,          //Type of extension described by this HDU
+  extension: Extension,          //Type of extension described by this HDU
   conforming: bool,           //does the file conform to the FITS standard
   extends: bool,              //does the file contain extensions
   has_groups: bool,           //does the file contain groups
@@ -52,7 +66,7 @@ pub struct HduOptions {
 impl HduOptions {
   pub fn new_invalid() -> Self {
     HduOptions {
-      extension: String::default(),
+      extension: Extension::Dump,
       conforming: false,
       extends: false,
       has_groups: false,
