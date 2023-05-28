@@ -24,7 +24,7 @@ use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
 use crate::{
   err::header_err::{InvalidHeaderErr, UTF8_KEYERR},
-  hdu::Hdu,
+  hdu::Hdu, intern::Extension,
 };
 
 use super::{fits_consts::*, HduOptions};
@@ -313,10 +313,12 @@ fn invalid_novalue_simple_test() {
 fn simple_option_test() {
   //Setup dummy data
   const TEST_RECS: (&str, Option<&str>, Option<&str>) = (SIMPLE, Some("T"), None);
-  const TEST_ANSWER: bool = true;
+  const ANSWER_CONFORMING: bool = true;
+  const ANSWER_EXTENSION: Extension = Extension::PrimaryHdu;
   let mut input_options = HduOptions::new_invalid();
   parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
-  assert!(*input_options.conforming() == TEST_ANSWER);
+  assert!(input_options.conforming() == &ANSWER_CONFORMING);
+  assert!(input_options.extension() == &ANSWER_EXTENSION);
 }
 
 #[test]
