@@ -31,31 +31,30 @@ pub enum Extension {
   BinTable,
   Foreign,
   #[default]
-  Dump
-  //NRAO AIPS binary tables are currently unsupported!
+  Dump, //NRAO AIPS binary tables are currently unsupported!
 }
 
 #[derive(Debug, Clone, PartialEq, Getters, Setters, MutGetters)]
 #[getset(get = "pub", set = "pub", get_mut = "pub")]
 pub struct HduOptions {
-  extension: Extension,          //Type of extension described by this HDU
-  conforming: bool,           //does the file conform to the FITS standard
-  extends: bool,              //does the file contain extensions
-  has_groups: bool,           //does the file contain groups
-  inherits_main: bool,        //does the file inherit the metadata from the primary HDU
-  bitpix: i8,                 //data type of array
-  n_axes: u32,                //number of array axes. Max is 999
-  shape: Vec<u32>,            //each axis max size is undefined
+  extension: Extension, //Type of extension described by this HDU
+  conforming: bool,     //does the file conform to the FITS standard
+  extends: bool,        //does the file contain extensions
+  has_groups: bool,     //does the file contain groups
+  inherits_main: bool,  //does the file inherit the metadata from the primary HDU
+  bitpix: i8,           //data type of array
+  n_axes: u32,          //number of array axes. Max is 999
+  shape: Vec<u32>,      //each axis max size is undefined
   /* Random groups options */
-  parameter_count: u32,       //number of parameters preceding a group array
-  group_count: u32,           //number of random groups
+  parameter_count: u32, //number of parameters preceding a group array
+  group_count: u32,     //number of random groups
   //p_types (should have a custom type)
-  param_scales: Vec<f64>,     //rescaling of p_real = p_scale * p + p0
-  param_zeros: Vec<f64>,      //see p_scales
+  param_scales: Vec<f64>, //rescaling of p_real = p_scale * p + p0
+  param_zeros: Vec<f64>,  //see p_scales
   /* Table options */
-  row_size: u32,              //number of entries (fields) in each row of table
-  column_start: Vec<u32>,     //specifies the column in which each field starts
-  heap_size: u32,             //specifies the size of the heap
+  row_size: u32,          //number of entries (fields) in each row of table
+  column_start: Vec<u32>, //specifies the column in which each field starts
+  heap_size: u32,         //specifies the size of the heap
   //column_format (should have a custom type)
   field_scales: Vec<f64>,     //rescaling of t_real = t_scale * t + t0
   field_zeros: Vec<f64>,      //see t_scales
@@ -84,7 +83,7 @@ impl HduOptions {
       field_scales: Vec::new(),
       field_zeros: Vec::new(),
       field_null: Vec::new(),
-      field_dispfmt: Vec::new()
+      field_dispfmt: Vec::new(),
     }
   }
 }

@@ -21,16 +21,16 @@
 
 //module structure
 mod file_io;
+mod fits_opts;
 mod hdu_io;
 mod header_io;
 mod keyword_utils;
 mod test_io;
-mod fits_opts;
 
 //re-exports
 pub use file_io::*;
-pub use hdu_io::*;
 pub use fits_opts::*;
+pub use hdu_io::*;
 
 pub mod fits_consts {
   //Constants defined by the FITS standard

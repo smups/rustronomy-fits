@@ -22,7 +22,10 @@
 use rayon::option;
 use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
-use crate::{err::header_err::{InvalidHeaderErr, UTF8_KEYERR}, hdu::Hdu};
+use crate::{
+  err::header_err::{InvalidHeaderErr, UTF8_KEYERR},
+  hdu::Hdu,
+};
 
 use super::{fits_consts::*, HduOptions};
 
@@ -191,16 +194,18 @@ macro_rules! create_parse_naxis_like_fn {
   )*};
 }
 
-create_parse_naxis_like_fn!(
-  (NAXIS, parse_naxis, n_axes_mut, shape_mut)
-);
+create_parse_naxis_like_fn!((NAXIS, parse_naxis, n_axes_mut, shape_mut));
 
 #[inline]
-pub fn parse_simple(_key: &str, value: Option<&str>, options: &mut HduOptions) -> Result<(), InvalidHeaderErr> {
+pub fn parse_simple(
+  _key: &str,
+  value: Option<&str>,
+  options: &mut HduOptions,
+) -> Result<(), InvalidHeaderErr> {
   let simple = value.ok_or(InvalidHeaderErr::NoValue { key: SIMPLE })?;
   //If simple is False, this is an error!
   if !parse_fits_bool(simple).map_err(|err| InvalidHeaderErr::FmtErr { key: SIMPLE, err })? {
-    return Err(InvalidHeaderErr::SimpleErr)
+    return Err(InvalidHeaderErr::SimpleErr);
   }
   //This is the primary header, conforming to the fits standard
   options.set_conforming(true);
