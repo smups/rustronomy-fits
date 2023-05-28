@@ -21,7 +21,7 @@
 
 use std::error::Error;
 
-use crate::{api::io::*, hdu::Hdu};
+use crate::{api::io::*, hdu::Hdu, intern::extensions::*};
 
 pub fn read_hdu(reader: &mut impl FitsReader) -> Result<Hdu, Box<dyn Error>> {
   //(0) Create a new HDU
