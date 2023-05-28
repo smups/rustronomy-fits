@@ -278,15 +278,22 @@ create_parse_number_fn!(
 );
 
 pub fn parse_bitpix(
-  key: &str,
+  _key: &str,
   value: Option<&str>,
   options: &mut HduOptions,
 ) -> Result<(), InvalidHeaderErr> {
-  *options.bitpix_mut() = value
+  let bitpix: i64 = value
     .ok_or(InvalidHeaderErr::NoValue { key: BITPIX })?
     .parse()
     .map_err(|err| InvalidHeaderErr::fmt_err(BITPIX, err))?;
-  Ok(())
+  match bitpix {
+    8 | 16 | 32 | 64 | -32 | -64 => {
+      options.set_bitpix(bitpix as i8);
+      Ok(())
+    } other => {
+      Err(InvalidHeaderErr::InvalidBitPix { bpx: other })
+    }
+  }
 }
 
 #[test]

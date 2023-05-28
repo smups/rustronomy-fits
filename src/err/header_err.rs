@@ -57,7 +57,9 @@ pub enum InvalidHeaderErr {
   NoValue { key: &'static str },
   NaxisOob { idx: usize, naxes: u32 },
   FmtErr { key: &'static str, err: String },
+  InvalidBitPix { bpx: i64 },
   SimpleErr,
+  ImageWithGroupErr,
   UnsupportedExtension { xt: String },
   InvalidExtension { xt: String },
 }
@@ -77,11 +79,13 @@ impl std::fmt::Display for InvalidHeaderErr {
     #[cfg_attr(rustfmt, rustfmt_skip)]
     match self {
       NoValue { key } => write!(f, "encountered a {key} keyword without a value."),
-      NaxisOob { idx, naxes } => write!(f, "encountered NAXIS{} keyword, but number of axes is only {}.", idx, naxes),
+      NaxisOob { idx, naxes } => write!(f, "encountered NAXIS{} keyword, but number of axes is only {}", idx, naxes),
       FmtErr { key, err } => write!(f, "encountered malformed {} keyword. Fmt error:\"{}\"", key, err),
-      SimpleErr => write!(f, "non-conforming FITS files are not supported (SIMPLE = F)."),
+      SimpleErr => write!(f, "non-conforming FITS files are not supported (SIMPLE = F)"),
       UnsupportedExtension { xt } => write!(f, "the extension \"{xt}\" is currently unsupported by rustronomy-fits"),
       InvalidExtension { xt } => write!(f, "malformed file: \"{xt}\" is not a valid FITS extension"),
+      ImageWithGroupErr => write!(f, "malformed file: GROUPS = T even though HDU contains an image"),
+      InvalidBitPix { bpx } => write!(f, "malformed BITPIX value ({bpx}). Only 8, 16, ±32 and ±64 are allowed.")
     }
   }
 }
