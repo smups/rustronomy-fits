@@ -27,6 +27,8 @@ mod header_io;
 mod keyword_utils;
 mod test_io;
 
+pub mod extensions;
+
 //re-exports
 pub use file_io::*;
 pub use fits_opts::*;

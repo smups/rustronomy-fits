@@ -291,7 +291,7 @@ pub fn parse_bitpix(
       options.set_bitpix(bitpix as i8);
       Ok(())
     } other => {
-      Err(InvalidHeaderErr::InvalidBitPix { bpx: other })
+      Err(InvalidHeaderErr::InvalidBitPix { bpx: other , allowed: &[8, 16, 32, 64, -32, -64]})
     }
   }
 }

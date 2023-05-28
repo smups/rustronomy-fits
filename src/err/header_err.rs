@@ -57,7 +57,9 @@ pub enum InvalidHeaderErr {
   NoValue { key: &'static str },
   NaxisOob { idx: usize, naxes: u32 },
   FmtErr { key: &'static str, err: String },
-  InvalidBitPix { bpx: i64 },
+  InvalidBitPix { bpx: i64, allowed: &'static [i8] },
+  InvalidPCount { xt: &'static str, pc: u32, allowed: &'static str },
+  InvalidGCount { xt: &'static str, gc: u32, allowed: &'static str },
   SimpleErr,
   ImageWithGroupErr,
   UnsupportedExtension { xt: String },
@@ -85,7 +87,9 @@ impl std::fmt::Display for InvalidHeaderErr {
       UnsupportedExtension { xt } => write!(f, "the extension \"{xt}\" is currently unsupported by rustronomy-fits"),
       InvalidExtension { xt } => write!(f, "malformed file: \"{xt}\" is not a valid FITS extension"),
       ImageWithGroupErr => write!(f, "malformed file: GROUPS = T even though HDU contains an image"),
-      InvalidBitPix { bpx } => write!(f, "malformed BITPIX value ({bpx}). Only 8, 16, ±32 and ±64 are allowed.")
+      InvalidBitPix { bpx, allowed } => write!(f, "malformed BITPIX value ({bpx}). Only {allowed:?} is/are allowed."),
+      InvalidPCount { xt, pc, allowed } => write!(f, "invalid parameter count ({pc}) for {xt} extension. Only {allowed:?} is/are allowed"),
+      InvalidGCount { xt, gc, allowed } => write!(f, "invalid group count ({gc}) for {xt} extension. Only {allowed:?} is/are allowed"),
     }
   }
 }

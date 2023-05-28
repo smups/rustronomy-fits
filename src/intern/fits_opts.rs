@@ -21,11 +21,14 @@
 
 use getset::{Getters, MutGetters, Setters};
 
+use crate::err::header_err::InvalidHeaderErr;
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum Extension {
   PrimaryHdu,
+  Groups,
   Image,
   Table,
   BinTable,
@@ -84,6 +87,46 @@ impl HduOptions {
       field_zeros: Vec::new(),
       field_null: Vec::new(),
       field_dispfmt: Vec::new(),
+    }
+  }
+
+  pub fn determine_data_type(&self) -> Result<Extension, InvalidHeaderErr> {
+    use Extension::*;
+    use InvalidHeaderErr::*;
+
+    let extension = if self.extension != PrimaryHdu {
+      self.extension
+    } else {
+      if self.has_groups {
+        Groups
+      } else {
+        Image
+      }
+    };
+
+    match extension {
+      Image => {
+        //Check if the shape of the image is correct
+        if self.n_axes as usize != self.shape.len() {
+          return Err(NaxisOob { idx: self.shape.len(), naxes: self.n_axes });
+        }
+        //Check if the bitpix value is allowed for an image extension
+        if self.bitpix == -1 {
+          return Err(NoValue { key: crate::intern::fits_consts::BITPIX })
+        } else if !matches!(self.bitpix, 8 | 16 | 32 | 64 | -32 | -64) {
+          return Err(InvalidBitPix { bpx: self.bitpix as i64, allowed: &[8, 16, 32, 64, -32, -64] })
+        }
+        //Check if the pcount value was set to the correct value
+        if self.parameter_count != 0 {
+          return Err(InvalidPCount { xt: "Image", pc: self.parameter_count, allowed: "0" })
+        }
+        //Check if the gcount value was set to the correct value
+        if self.group_count != 1 {
+          return Err(InvalidGCount { xt: "Image", gc: self.parameter_count, allowed: "1" })
+        }
+        Ok(Image)
+      },
+      other => Err(UnsupportedExtension { xt: format!("{other:?}") })
     }
   }
 }
