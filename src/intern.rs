@@ -19,81 +19,20 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-//Std imports
-use std::error::Error;
-
-//external imports
-use rustronomy_core::universal_containers::*;
-
-//internal imports
-use crate::api::hdu::Hdu;
-use header_io::*;
-
 //module structure
 mod file_io;
 mod hdu_io;
 mod header_io;
 mod keyword_utils;
 mod test_io;
+mod fits_opts;
 
 //re-exports
 pub use file_io::*;
 pub use hdu_io::*;
+pub use fits_opts::*;
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct HduOptions {
-  extension: String,          //Type of extension described by this HDU
-  conforming: bool,           //does the file conform to the FITS standard
-  extends: bool,              //does the file contain extensions
-  has_groups: bool,           //does the file contain groups
-  inherits_main: bool,        //does the file inherit the metadata from the primary HDU
-  bitpix: i8,                 //data type of array
-  n_axes: u32,                //number of array axes. Max is 999
-  shape: Vec<u32>,            //each axis max size is undefined
-  /* Random groups options */
-  parameter_count: u32,       //number of parameters preceding a group array
-  group_count: u32,           //number of random groups
-  //p_types (should have a custom type)
-  param_scales: Vec<f64>,     //rescaling of p_real = p_scale * p + p0
-  param_zeros: Vec<f64>,      //see p_scales
-  /* Table options */
-  row_size: u32,              //number of entries (fields) in each row of table
-  column_start: Vec<u32>,     //specifies the column in which each field starts
-  heap_size: u32,             //specifies the size of the heap
-  //column_format (should have a custom type)
-  field_scales: Vec<f64>,     //rescaling of t_real = t_scale * t + t0
-  field_zeros: Vec<f64>,      //see t_scales
-  field_null: Vec<String>,    //null value format for each field
-  field_dispfmt: Vec<String>, //display format for each field
-}
-
-impl HduOptions {
-  pub fn new_invalid() -> Self {
-    HduOptions {
-      extension: String::default(),
-      conforming: false,
-      extends: false,
-      has_groups: false,
-      inherits_main: false,
-      bitpix: -1,
-      n_axes: 0,
-      shape: Vec::new(),
-      parameter_count: 0,
-      group_count: 0,
-      param_scales: Vec::new(),
-      param_zeros: Vec::new(),
-      row_size: 0,
-      column_start: Vec::new(),
-      heap_size: 0,
-      field_scales: Vec::new(),
-      field_zeros: Vec::new(),
-      field_null: Vec::new(),
-      field_dispfmt: Vec::new()
-    }
-  }
-}
-
-pub(crate) mod fits_consts {
+pub mod fits_consts {
   //Constants defined by the FITS standard
   pub const BLOCK_SIZE: usize = 2880;
   pub const RECORD_SIZE: usize = 80;
