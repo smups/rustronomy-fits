@@ -19,7 +19,10 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-#[derive(Debug, Clone, PartialEq)]
+use getset::{Getters, MutGetters, Setters};
+
+#[derive(Debug, Clone, PartialEq, Getters, Setters, MutGetters)]
+#[getset(get = "pub", set = "pub", get_mut = "pub")]
 pub struct HduOptions {
   extension: String,          //Type of extension described by this HDU
   conforming: bool,           //does the file conform to the FITS standard

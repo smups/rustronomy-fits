@@ -171,18 +171,19 @@ macro_rules! create_parse_naxis_like_fn {
       options: &mut HduOptions,
     ) -> Result<(), InvalidHeaderErr> {
       let idx = std::str::from_utf8(&key.as_bytes()[$base_key.len()..]).expect(UTF8_KEYERR);
-      let value = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
+      let raw_value = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
       if idx == "" {
-        options.$scalar_field = value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
-        options.$vec_field = vec![0; options.$scalar_field as usize];
+        *options.$scalar_field() = raw_value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
+        *options.$vec_field() = vec![0; *options.$scalar_field() as usize];
       } else {
         let idx: usize = idx.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
-        let value = value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
+        let value = raw_value.parse().map_err(|err| InvalidHeaderErr::fmt_err($base_key, err))?;
+        let naxes = *options.$scalar_field();
         //index in FITS starts with 1, rust starts with 0 so minus one to convert
         *options
-          .$vec_field
+          .$vec_field()
           .get_mut(idx - 1)
-          .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes: options.$scalar_field })? = value;
+          .ok_or(InvalidHeaderErr::NaxisOob { idx, naxes })? = value;
       }
       Ok(())
     }
@@ -190,7 +191,7 @@ macro_rules! create_parse_naxis_like_fn {
 }
 
 create_parse_naxis_like_fn!(
-  (NAXIS, parse_naxis, n_axes, shape)
+  (NAXIS, parse_naxis, n_axes_mut, shape_mut)
 );
 
 macro_rules! create_parse_bool_fn {
@@ -202,7 +203,7 @@ macro_rules! create_parse_bool_fn {
       options: &mut HduOptions,
     ) -> Result<(), InvalidHeaderErr> {
       let conforming = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
-      options.$field = super::keyword_utils::parse_fits_bool(conforming)
+      *options.$field() = super::keyword_utils::parse_fits_bool(conforming)
         .map_err(|err| InvalidHeaderErr::FmtErr { key: $base_key, err })?;
       Ok(())
     }
@@ -210,10 +211,10 @@ macro_rules! create_parse_bool_fn {
 }
 
 create_parse_bool_fn!(
-  (SIMPLE, parse_simple, conforming),
-  (EXTEND, parse_extend, extends),
-  (GROUPS, parse_groups, has_groups),
-  (INHERIT, parse_inherit, inherits_main)
+  (SIMPLE, parse_simple, conforming_mut),
+  (EXTEND, parse_extend, extends_mut),
+  (GROUPS, parse_groups, has_groups_mut),
+  (INHERIT, parse_inherit, inherits_main_mut)
 );
 
 macro_rules! create_parse_number_fn {
@@ -225,7 +226,7 @@ macro_rules! create_parse_number_fn {
       options: &mut HduOptions,
     ) -> Result<(), InvalidHeaderErr> {
       let number = value.ok_or(InvalidHeaderErr::NoValue { key: $base_key })?;
-      options.$field = str::parse::<$type>(number.trim())
+      *options.$field() = str::parse::<$type>(number.trim())
         .map_err(|err| InvalidHeaderErr::FmtErr { key: $base_key, err: format!("{err}") })?;
       Ok(())
     }
@@ -233,10 +234,10 @@ macro_rules! create_parse_number_fn {
 }
 
 create_parse_number_fn!(
-  (GCOUNT, parse_gcount, group_count, u32),
-  (PCOUNT, parse_pcount, parameter_count, u32),
-  (THEAP, parse_theap, heap_size, u32),
-  (TFIELDS, parse_tfields, row_size, u32)
+  (GCOUNT, parse_gcount, group_count_mut, u32),
+  (PCOUNT, parse_pcount, parameter_count_mut, u32),
+  (THEAP, parse_theap, heap_size_mut, u32),
+  (TFIELDS, parse_tfields, row_size_mut, u32)
 );
 
 pub fn parse_bitpix(
@@ -244,7 +245,7 @@ pub fn parse_bitpix(
   value: Option<&str>,
   options: &mut HduOptions,
 ) -> Result<(), InvalidHeaderErr> {
-  options.bitpix = value
+  *options.bitpix_mut() = value
     .ok_or(InvalidHeaderErr::NoValue { key: BITPIX })?
     .parse()
     .map_err(|err| InvalidHeaderErr::fmt_err(BITPIX, err))?;
@@ -265,9 +266,9 @@ fn naxis_option_test() {
   for (key, value, _comment) in TEST_RECS {
     parse_naxis(key, value, &mut input_options).unwrap();
   }
-  assert!(input_options.n_axes == input_options.shape.len() as u32);
-  assert!(input_options.shape.len() == TEST_ANSWER.len());
-  assert!(input_options.shape == TEST_ANSWER);
+  assert!(*input_options.n_axes() == input_options.shape().len() as u32);
+  assert!(input_options.shape().len() == TEST_ANSWER.len());
+  assert!(*input_options.shape() == TEST_ANSWER);
 }
 
 #[test]
@@ -297,7 +298,7 @@ fn simple_option_test() {
   const TEST_ANSWER: bool = true;
   let mut input_options = HduOptions::new_invalid();
   parse_simple(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
-  assert!(input_options.conforming == TEST_ANSWER);
+  assert!(*input_options.conforming() == TEST_ANSWER);
 }
 
 #[test]
@@ -307,7 +308,7 @@ fn bitpix_option_test() {
   const TEST_ANSWER: i8 = -32;
   let mut input_options = HduOptions::new_invalid();
   parse_bitpix(TEST_RECS.0, TEST_RECS.1, &mut input_options).unwrap();
-  assert!(input_options.bitpix == TEST_ANSWER);
+  assert!(*input_options.bitpix() == TEST_ANSWER);
 }
 
 #[test]

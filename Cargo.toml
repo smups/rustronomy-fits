@@ -46,6 +46,7 @@ chrono = "0.4"
 rayon = "1"
 dyn-clone = "1"
 indexmap = "1"
+getset = "0.1"
 rustronomy-core = "0.5.1"
 
 [dev-dependencies]
