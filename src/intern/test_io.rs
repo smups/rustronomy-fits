@@ -19,13 +19,15 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
+use std::{thread, time::Duration};
+
 use crate::{intern::fits_consts::BLOCK_SIZE, io::FitsReader};
 
 // Shorthand error type
 type Error = crate::err::io_err::FitsReadErr;
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct TestIo<'a> {
+pub struct TestIo<'a, const DELAY: u64 = 0> {
   data: &'a [u8],
   cursor: usize,
 }
@@ -57,7 +59,7 @@ fn test_testio_clone() {
   assert_eq!(x.data, y.data);
 }
 
-impl<'a> FitsReader for TestIo<'a> {
+impl<'a, const DELAY: u64> FitsReader for TestIo<'a, DELAY> {
   fn read_blocks_into(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
     //(1) Get the number of bytes we have to read
     let bytes_to_read = buffer.len();
@@ -81,6 +83,9 @@ impl<'a> FitsReader for TestIo<'a> {
 
     //(5) Update the cursor
     self.cursor += blcks_req;
+
+    //(6) Simulate input delay (if configured to do so)
+    thread::sleep(Duration::from_millis(DELAY));
 
     //(R) the amount of blocks read
     Ok(blcks_req)
