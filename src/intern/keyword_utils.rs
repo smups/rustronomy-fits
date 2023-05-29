@@ -24,7 +24,8 @@ use rustronomy_core::{meta::tags, prelude::MetaContainer};
 
 use crate::{
   err::header_err::{InvalidHeaderErr, UTF8_KEYERR},
-  hdu::Hdu, intern::Extension,
+  hdu::Hdu,
+  intern::Extension,
 };
 
 use super::{fits_consts::*, HduOptions};
@@ -224,9 +225,8 @@ pub fn parse_extension(
     XT_IMAGE | XT_IUEIMAGE => Extension::Image,
     XT_TABLE | XT_BINTABLE | XT_A3DTABLE | XT_DUMP | XT_FOREIGN => {
       return Err(InvalidHeaderErr::UnsupportedExtension { xt: raw_str.to_string() })
-    }, other => {
-      return Err(InvalidHeaderErr::InvalidExtension { xt: other.to_string() })
     }
+    other => return Err(InvalidHeaderErr::InvalidExtension { xt: other.to_string() }),
   };
   options.set_extension(xtension);
   Ok(())
@@ -290,8 +290,9 @@ pub fn parse_bitpix(
     8 | 16 | 32 | 64 | -32 | -64 => {
       options.set_bitpix(bitpix as i8);
       Ok(())
-    } other => {
-      Err(InvalidHeaderErr::InvalidBitPix { bpx: other , allowed: &[8, 16, 32, 64, -32, -64]})
+    }
+    other => {
+      Err(InvalidHeaderErr::InvalidBitPix { bpx: other, allowed: &[8, 16, 32, 64, -32, -64] })
     }
   }
 }

@@ -112,21 +112,24 @@ impl HduOptions {
         }
         //Check if the bitpix value is allowed for an image extension
         if self.bitpix == -1 {
-          return Err(NoValue { key: crate::intern::fits_consts::BITPIX })
+          return Err(NoValue { key: crate::intern::fits_consts::BITPIX });
         } else if !matches!(self.bitpix, 8 | 16 | 32 | 64 | -32 | -64) {
-          return Err(InvalidBitPix { bpx: self.bitpix as i64, allowed: &[8, 16, 32, 64, -32, -64] })
+          return Err(InvalidBitPix {
+            bpx: self.bitpix as i64,
+            allowed: &[8, 16, 32, 64, -32, -64],
+          });
         }
         //Check if the pcount value was set to the correct value
         if self.parameter_count != 0 {
-          return Err(InvalidPCount { xt: "Image", pc: self.parameter_count, allowed: "0" })
+          return Err(InvalidPCount { xt: "Image", pc: self.parameter_count, allowed: "0" });
         }
         //Check if the gcount value was set to the correct value
         if self.group_count != 1 {
-          return Err(InvalidGCount { xt: "Image", gc: self.parameter_count, allowed: "1" })
+          return Err(InvalidGCount { xt: "Image", gc: self.parameter_count, allowed: "1" });
         }
         Ok(Image)
-      },
-      other => Err(UnsupportedExtension { xt: format!("{other:?}") })
+      }
+      other => Err(UnsupportedExtension { xt: format!("{other:?}") }),
     }
   }
 }

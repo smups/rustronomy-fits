@@ -38,7 +38,7 @@ pub fn read_hdu(reader: &mut impl FitsReader) -> Result<Hdu, Box<dyn Error>> {
   use super::Extension::*;
   match fits_options.determine_data_type()? {
     Image => todo!(),
-    other => ()
+    other => (),
   }
 
   //(2) Determine the kind of HDU we got

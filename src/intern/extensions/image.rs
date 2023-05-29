@@ -19,16 +19,29 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use std::{thread, sync::{Mutex, mpsc::sync_channel}, ops::DerefMut, error::Error};
+use std::{
+  error::Error,
+  ops::DerefMut,
+  sync::{mpsc::sync_channel, Mutex},
+  thread,
+};
 
 use num_traits::Num;
 
-use ndarray as nd;
 use nd::ShapeBuilder;
+use ndarray as nd;
 
-use crate::{intern::{HduOptions, fits_consts::BLOCK_SIZE}, io::FitsReader, hdu::HduData, err::io_err::FitsReadErr};
+use crate::{
+  err::io_err::FitsReadErr,
+  hdu::HduData,
+  intern::{fits_consts::BLOCK_SIZE, HduOptions},
+  io::FitsReader,
+};
 
-pub fn read_image_hdu(opts: &HduOptions, reader: &mut (impl FitsReader + Send)) -> Result<HduData, FitsReadErr> {
+pub fn read_image_hdu(
+  opts: &HduOptions,
+  reader: &mut (impl FitsReader + Send),
+) -> Result<HduData, FitsReadErr> {
   //(1a) Caculate the size in bytes of the image
   let n_entries = opts.shape().into_iter().fold(0, |acc, bpx| acc + (*bpx as usize));
   let byte_size = (opts.bitpix().abs() as usize / 8) * n_entries;
@@ -42,7 +55,7 @@ pub fn read_image_hdu(opts: &HduOptions, reader: &mut (impl FitsReader + Send)) 
       HduData::$variant(array.into_dyn())
     }};
   }
-  
+
   //(R) return the finished hdu
   Ok(match *opts.bitpix() {
     8 => make_array!(ArrayU8),
@@ -51,11 +64,14 @@ pub fn read_image_hdu(opts: &HduOptions, reader: &mut (impl FitsReader + Send)) 
     64 => make_array!(ArrayI64),
     -32 => make_array!(ArrayF32),
     -64 => make_array!(ArrayF64),
-    other => panic!("reached invalid bitpix value ({other}) in image parser")
+    other => panic!("reached invalid bitpix value ({other}) in image parser"),
   })
 }
 
-fn read_typed_vec<T: FitsNumber>(n_entries: usize, reader: &mut (impl FitsReader + Send)) -> Result<Vec<T>, FitsReadErr> {
+fn read_typed_vec<T: FitsNumber>(
+  n_entries: usize,
+  reader: &mut (impl FitsReader + Send),
+) -> Result<Vec<T>, FitsReadErr> {
   //(1) Pre-allocate output vec
   let mut out = Vec::<T>::with_capacity(n_entries);
 
@@ -63,11 +79,11 @@ fn read_typed_vec<T: FitsNumber>(n_entries: usize, reader: &mut (impl FitsReader
   let n_full_blocks = std::mem::size_of::<T>() * n_entries / BLOCK_SIZE;
 
   /*
-  * Explanation of IO strategy
-  * There will be two threads: one responsible for reading header blocks, and 
-  * one responsible for turning the raw bytes into typed data.
-  * 
-  */
+   * Explanation of IO strategy
+   * There will be two threads: one responsible for reading header blocks, and
+   * one responsible for turning the raw bytes into typed data.
+   *
+   */
   let mut local_buf = Ok(Box::new([0u8; BLOCK_SIZE]));
   let shared_buf = Mutex::new(Ok(Box::new([0u8; BLOCK_SIZE])));
   let (tx, rx) = sync_channel::<bool>(0);
@@ -75,7 +91,7 @@ fn read_typed_vec<T: FitsNumber>(n_entries: usize, reader: &mut (impl FitsReader
   //() Create a scope to manage the buffer lifetimes
   thread::scope(|scope| -> Result<(), FitsReadErr> {
     let shared_buf_ref = &shared_buf;
-    
+
     //Set-up the IO thread
     scope.spawn(move || {
       let mut io_buf = Ok(Box::new([0u8; BLOCK_SIZE]));
@@ -102,7 +118,7 @@ fn read_typed_vec<T: FitsNumber>(n_entries: usize, reader: &mut (impl FitsReader
 
       //(3) Parse the buffer
       if let Err(err) = local_buf {
-        return Err(err)
+        return Err(err);
       } else if let Ok(ref buf) = local_buf {
         for raw in buf.chunks_exact(std::mem::size_of::<T>()) {
           out.push(T::fits_decode(raw))
@@ -147,7 +163,7 @@ macro_rules! impl_fitsnumber {
       fn fits_decode(raw: &[u8]) -> Self {
         Self::from_be_bytes(raw.try_into().expect("incorrect slice length. This is a bug in rustronomy-fits"))
       }
-    
+
       #[inline]
       fn fits_encode(self, dest: &mut [u8]) {
         dest.copy_from_slice(&self.to_be_bytes())
