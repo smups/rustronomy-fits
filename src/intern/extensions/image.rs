@@ -19,24 +19,40 @@
   licensee subject to Dutch law as per article 15 of the EUPL.
 */
 
-use std::{thread, sync::{Mutex, mpsc::sync_channel, Arc}, ops::DerefMut, error::Error};
+use std::{thread, sync::{Mutex, mpsc::sync_channel}, ops::DerefMut, error::Error};
 
 use num_traits::Num;
 
+use ndarray as nd;
+use nd::ShapeBuilder;
+
 use crate::{intern::{HduOptions, fits_consts::BLOCK_SIZE}, io::FitsReader, hdu::HduData, err::io_err::FitsReadErr};
 
-pub fn read_image_hdu(opts: &HduOptions, reader: &mut (impl FitsReader + Send)) -> HduData {
+pub fn read_image_hdu(opts: &HduOptions, reader: &mut (impl FitsReader + Send)) -> Result<HduData, FitsReadErr> {
   //(1a) Caculate the size in bytes of the image
   let n_entries = opts.shape().into_iter().fold(0, |acc, bpx| acc + (*bpx as usize));
   let byte_size = (opts.bitpix().abs() as usize / 8) * n_entries;
 
-  //(1b) Calculate the number of *full* FITS blocks we have to read
-  let full_block_size = byte_size / BLOCK_SIZE;
-
-  //(2) Allocate a vec (of the appropriate type) large enough to hold all data
-
-
-  todo!()
+  //Macro to parse each typed array
+  macro_rules! make_array {
+    ($variant:ident) => {{
+      let raw = read_typed_vec(n_entries, reader)?;
+      let shape = opts.shape().into_iter().map(|x| *x as usize).collect::<Vec<_>>().f();
+      let array = nd::Array::from_shape_vec(shape, raw).unwrap();
+      HduData::$variant(array.into_dyn())
+    }};
+  }
+  
+  //(R) return the finished hdu
+  Ok(match *opts.bitpix() {
+    8 => make_array!(ArrayU8),
+    16 => make_array!(ArrayI16),
+    32 => make_array!(ArrayI32),
+    64 => make_array!(ArrayI64),
+    -32 => make_array!(ArrayF32),
+    -64 => make_array!(ArrayF64),
+    other => panic!("reached invalid bitpix value ({other}) in image parser")
+  })
 }
 
 fn read_typed_vec<T: FitsNumber>(n_entries: usize, reader: &mut (impl FitsReader + Send)) -> Result<Vec<T>, FitsReadErr> {
