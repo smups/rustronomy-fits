@@ -72,7 +72,7 @@ pub fn read_image_hdu(opts: &HduOptions, reader: &mut (impl FitsReader + Send)) 
   todo!()
 }
 
-fn read_typed_vec<T: Num>(n_entries: usize, reader: &mut (impl FitsReader + Send)) -> Result<Vec<T>, FitsReadErr> {
+fn read_typed_vec<T: FitsNumber>(n_entries: usize, reader: &mut (impl FitsReader + Send)) -> Result<Vec<T>, FitsReadErr> {
   //(1) Pre-allocate output vec
   let mut out = Vec::<T>::with_capacity(n_entries);
 
@@ -96,7 +96,7 @@ fn read_typed_vec<T: Num>(n_entries: usize, reader: &mut (impl FitsReader + Send
     //Set-up the IO thread
     scope.spawn(move || {
       let mut io_buf = Ok(Box::new([0u8; BLOCK_SIZE]));
-      while rx.recv().unwrap() {
+      while let Ok(true) = rx.recv() {
         //Fill local buffer
         io_buf = reader
           .read_blocks_into(io_buf.as_mut().unwrap().deref_mut())
@@ -122,15 +122,24 @@ fn read_typed_vec<T: Num>(n_entries: usize, reader: &mut (impl FitsReader + Send
         return Err(err)
       } else if let Ok(ref buf) = local_buf {
         for raw in buf.chunks_exact(std::mem::size_of::<T>()) {
-
+          out.push(T::fits_decode(raw))
         }
       }
+    }
+
+    //Read the last FITS block
+    tx.send(true);
+    let final_block = std::mem::replace(shared_buf.lock().unwrap().deref_mut(), local_buf)?;
+    let remainder = (std::mem::size_of::<T>() * n_entries) % BLOCK_SIZE;
+    for raw in final_block[0..=remainder].chunks_exact(std::mem::size_of::<T>()) {
+      out.push(T::fits_decode(raw))
     }
 
     Ok(())
   })?;
 
-  todo!()
+  //(R) Return the finished filled buffer!
+  return Ok(out);
 }
 
 trait FitsNumber: Num {
