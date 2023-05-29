@@ -23,7 +23,7 @@ use std::error::Error;
 
 use crate::{api::io::*, hdu::Hdu, intern::extensions::*};
 
-pub fn read_hdu(reader: &mut impl FitsReader) -> Result<Hdu, Box<dyn Error>> {
+pub fn read_hdu(reader: &mut (impl FitsReader + Send)) -> Result<Hdu, Box<dyn Error>> {
   //(0) Create a new HDU
   let mut hdu = Hdu::default();
 
@@ -36,10 +36,10 @@ pub fn read_hdu(reader: &mut impl FitsReader) -> Result<Hdu, Box<dyn Error>> {
   let fits_options = super::header_io::read_header(reader, &mut hdu)?;
 
   use super::Extension::*;
-  match fits_options.determine_data_type()? {
-    Image => todo!(),
-    other => (),
-  }
+  let data = match fits_options.determine_data_type()? {
+    Image => super::extensions::read_image_hdu(&fits_options, reader)?,
+    other => todo!(),
+  };
 
   //(2) Determine the kind of HDU we got
   todo!()
@@ -55,7 +55,7 @@ pub fn write_hdu(hdu: Hdu, writer: &mut impl FitsWriter) -> Result<(), Box<dyn E
 
 #[test]
 pub fn read_header_test() {
-  let mut test_writer = super::test_io::mock_data::HUBBLE_FGS.clone();
+  let mut test_writer = super::test_io::mock_data::EUVE.clone();
   let mut hdu0 = Hdu::default();
   let opts = super::header_io::read_header(&mut test_writer, &mut hdu0).unwrap();
   println!("{hdu0:?}");
