@@ -73,6 +73,12 @@ impl Hdu {
     Hdu { meta: MetaOnly::new(), data: Some(data.into()) }
   }
 
+  /// Replaces the data inside the HDU with the supplied data, returning the old
+  /// data (if it was present)
+  pub fn replace_data(&mut self, data: impl Into<HduData>) -> Option<HduData> {
+    std::mem::replace(&mut self.data, Some(data.into()))
+  }
+
   /// Returns reference to data held by this Hdu, if such data is present. If no
   /// data is present, or the data in the Hdu cannot be converted to the specified
   /// type, an error will be returned instead. This method does not panic.
@@ -96,7 +102,7 @@ impl Hdu {
   }
 
   /// Returns a reference to the metadata held by this HDU.
-  pub fn get_meta(&self) -> &MetaOnly {
+  pub const fn get_meta(&self) -> &MetaOnly {
     &self.meta
   }
 
@@ -106,7 +112,7 @@ impl Hdu {
   }
 
   /// Constructs Hdu from HduData and MetaOnly components
-  pub fn from_parts(data: HduData, meta: MetaOnly) -> Self {
+  pub const fn from_parts(data: HduData, meta: MetaOnly) -> Self {
     Hdu { meta: meta, data: Some(data) }
   }
 
