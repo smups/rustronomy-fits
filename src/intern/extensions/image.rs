@@ -35,39 +35,6 @@ pub fn read_image_hdu(opts: &HduOptions, reader: &mut (impl FitsReader + Send)) 
 
   //(2) Allocate a vec (of the appropriate type) large enough to hold all data
 
-  //Two buffers: buf1 is owned by the main thread, buf2 by the io thread
-  let mut buf1 = Box::new([0u8; BLOCK_SIZE]);
-  let mut mtx_buf = Arc::new(Mutex::new(buf1.clone()));
-  //Channel to tell the io thread if it should continue or not
-  let (tx, rx) = sync_channel::<bool>(0);
-
-  //(3) Spawn a thread that will be doing the actual *reading* of the fits file
-  thread::scope(|scope| {
-    let mut mtx_buf_wrkr = mtx_buf.clone();
-    //This is the worker thread
-    scope.spawn(move || {
-      loop {
-        //Check if we have to continue
-        if !rx.recv().unwrap() {
-          break Ok(());
-        }
-        //Read into buffer
-        if let Err(err) = reader.read_blocks_into(mtx_buf_wrkr.lock().unwrap().as_mut()) {
-          break Err(err);
-        }
-      }
-    });
-
-    //This is the parser thread
-    for _ in 0..full_block_size {
-      //Tell the io thread to read a new block
-      tx.send(true).unwrap();
-      //Swap the buffers
-      std::mem::swap(mtx_buf.lock().unwrap().deref_mut(), &mut buf1);
-    }
-    //Kill the worker
-    tx.send(false).unwrap();
-  });
 
   todo!()
 }
@@ -135,11 +102,21 @@ fn read_typed_vec<T: FitsNumber>(n_entries: usize, reader: &mut (impl FitsReader
       out.push(T::fits_decode(raw))
     }
 
+    //Kill the IO thread
+    tx.send(false);
     Ok(())
   })?;
 
   //(R) Return the finished filled buffer!
   return Ok(out);
+}
+
+#[test]
+fn test_read_typed_vec() {
+  use crate::intern::test_io as io;
+  let mut reader = io::mock_data::HUBBLE_FOC.clone_with_delay::<10>();
+  let n_entries = 10000;
+  let vec: Vec<i64> = read_typed_vec(n_entries, &mut reader).unwrap();
 }
 
 trait FitsNumber: Num {
