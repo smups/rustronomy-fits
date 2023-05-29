@@ -43,6 +43,12 @@ impl<'a> TestIo<'a> {
   pub const fn clone(&self) -> Self {
     TestIo { data: self.data, cursor: 0 }
   }
+
+  /// Returns a `TestIo<'a>` pointing to the same data as `self`, but with the
+  /// cursor reset to zero and a different input delay.
+  pub const fn clone_with_delay<const DELAY: u64>(&self) -> TestIo<'_, DELAY> {
+    TestIo { data: self.data, cursor: 0 }
+  }
 }
 
 #[test]
