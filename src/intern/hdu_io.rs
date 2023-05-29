@@ -38,7 +38,7 @@ pub fn read_hdu(reader: &mut (impl FitsReader + Send)) -> Result<Hdu, Box<dyn Er
   /*(2)
    * Decode the data part of the HDU. Which decoding method should be used
    * depends on the data stored in the HDU, which can be derived from the fits
-   * options we previously decoded. 
+   * options we previously decoded.
    */
   use super::Extension::*;
   let data = match fits_options.determine_data_type()? {
