@@ -21,7 +21,7 @@
 
 use std::error::Error;
 
-use crate::{api::io::*, hdu::Hdu, intern::extensions::*};
+use crate::{api::io::*, hdu::Hdu};
 
 pub fn read_hdu(reader: &mut (impl FitsReader + Send)) -> Result<Hdu, Box<dyn Error>> {
   //(0) Create a new HDU
@@ -35,14 +35,20 @@ pub fn read_hdu(reader: &mut (impl FitsReader + Send)) -> Result<Hdu, Box<dyn Er
    */
   let fits_options = super::header_io::read_header(reader, &mut hdu)?;
 
+  /*(2)
+   * Decode the data part of the HDU. Which decoding method should be used
+   * depends on the data stored in the HDU, which can be derived from the fits
+   * options we previously decoded. 
+   */
   use super::Extension::*;
   let data = match fits_options.determine_data_type()? {
     Image => super::extensions::read_image_hdu(&fits_options, reader)?,
     other => todo!(),
   };
 
-  //(2) Determine the kind of HDU we got
-  todo!()
+  //(R) Replace the data in the Hdu and return it
+  hdu.replace_data(data);
+  Ok(hdu)
 }
 
 pub fn write_hdu(hdu: Hdu, writer: &mut impl FitsWriter) -> Result<(), Box<dyn Error>> {
