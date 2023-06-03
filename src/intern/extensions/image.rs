@@ -38,6 +38,8 @@ use crate::{
   io::FitsReader,
 };
 
+const BUF_SIZE: usize = BLOCK_SIZE;
+
 pub fn read_image_hdu(
   opts: &HduOptions,
   reader: &mut (impl FitsReader + Send),
@@ -76,7 +78,7 @@ fn read_typed_vec<T: FitsNumber>(
   let mut out = Vec::<T>::with_capacity(n_entries);
 
   //Calculate number of blocks that we have to read
-  let n_full_blocks = std::mem::size_of::<T>() * n_entries / BLOCK_SIZE;
+  let n_full_blocks = std::mem::size_of::<T>() * n_entries / BUF_SIZE;
 
   /*
    * Explanation of IO strategy
@@ -84,8 +86,8 @@ fn read_typed_vec<T: FitsNumber>(
    * one responsible for turning the raw bytes into typed data.
    *
    */
-  let mut local_buf = Ok(Box::new([0u8; BLOCK_SIZE]));
-  let shared_buf = Mutex::new(Ok(Box::new([0u8; BLOCK_SIZE])));
+  let mut local_buf = Ok(Box::new([0u8; BUF_SIZE]));
+  let shared_buf = Mutex::new(Ok(Box::new([0u8; BUF_SIZE])));
   let (tx, rx) = sync_channel::<bool>(0);
 
   //() Create a scope to manage the buffer lifetimes
@@ -94,7 +96,7 @@ fn read_typed_vec<T: FitsNumber>(
 
     //Set-up the IO thread
     scope.spawn(move || {
-      let mut io_buf = Ok(Box::new([0u8; BLOCK_SIZE]));
+      let mut io_buf = Ok(Box::new([0u8; BUF_SIZE]));
       while let Ok(true) = rx.recv() {
         //Fill local buffer
         io_buf = reader
@@ -129,7 +131,7 @@ fn read_typed_vec<T: FitsNumber>(
     //Read the last FITS block
     tx.send(true);
     let final_block = std::mem::replace(shared_buf.lock().unwrap().deref_mut(), local_buf)?;
-    let remainder = (std::mem::size_of::<T>() * n_entries) % BLOCK_SIZE;
+    let remainder = (std::mem::size_of::<T>() * n_entries) % BUF_SIZE;
     for raw in final_block[0..=remainder].chunks_exact(std::mem::size_of::<T>()) {
       out.push(T::fits_decode(raw))
     }
@@ -145,10 +147,20 @@ fn read_typed_vec<T: FitsNumber>(
 
 #[test]
 fn test_read_typed_vec() {
-  use crate::intern::test_io as io;
-  let mut reader = io::mock_data::HUBBLE_FOC.clone_with_delay::<10>();
+  use crate::intern::file_io as io;
+  let mut reader = io::FitsFileReader::new("./resources/Astro_UIT.fits").unwrap();  
   let n_entries = 10000;
+  let start = std::time::Instant::now();
   let vec: Vec<i64> = read_typed_vec(n_entries, &mut reader).unwrap();
+  println!("Time: {}µs", start.elapsed().as_micros());
+  /* Results
+   * 1 BLOCK_SIZE: 1058
+   * 2 BLOCK_SIZE: 1064
+   * 4 BLOCK_SIZE: 1204
+   * 8 BLOCK_SIZE: 1068
+   * 
+   * Conclusion: just use BLOCK_SIZE as the buffer size
+   */
 }
 
 trait FitsNumber: Num {
