@@ -48,7 +48,7 @@ impl FitsFileReader {
   ///
   /// # Panics
   /// Does not panic
-  pub fn new(path: &Path) -> Result<Self, FitsReadErr> {
+  pub fn new<P: AsRef<Path>>(path: &P) -> Result<Self, FitsReadErr> {
     //(1) Open the file
     let reader_handle = File::open(path)?;
 
@@ -118,7 +118,7 @@ impl FitsFileWriter {
   ///
   /// # Panics
   /// Does not panic
-  pub fn new(path: &Path) -> Result<Self, FitsWriteErr> {
+  pub fn new<P: AsRef<Path>>(path: &P) -> Result<Self, FitsWriteErr> {
     //(1) Open the file if it exists, create it if it doesn't
     let writer_handle = File::create(path)?;
 
