@@ -59,11 +59,29 @@ pub fn write_hdu(hdu: Hdu, writer: &mut impl FitsWriter) -> Result<(), Box<dyn E
 //                                 UNIT TESTS                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#[test]
-pub fn read_header_test() {
-  let mut test_writer = super::test_io::mock_data::EUVE.clone();
-  let mut hdu0 = Hdu::default();
-  let opts = super::header_io::read_header(&mut test_writer, &mut hdu0).unwrap();
-  println!("{hdu0:?}");
-  println!("{opts:?}");
+macro_rules! entire_file_test {
+  ($($writer:ident, $test_name:ident),*) => {$(
+    #[test]
+    fn $test_name() {
+      let mut test_writer = super::test_io::mock_data::$writer.clone();
+      let mut hdu0 = Hdu::default();
+      let opts = super::header_io::read_header(&mut test_writer, &mut hdu0).unwrap();
+      println!("{hdu0:?}");
+      println!("{opts:?}");
+    }
+  )*};
 }
+
+entire_file_test!(
+  ASTRO_UIT, astro_uit_test,
+  EUVE, euve_test,
+  IUE_LWP, iue_lwp_test,
+  RANDOM_GROUPS, random_groups_test,
+  HUBBLE_FGS, hubble_fgs_test,
+  HUBBLE_FOC, hubble_foc_test,
+  HUBBLE_FOS, hubble_fos_test,
+  HUBBLE_HRS, hubble_hrs_test,
+  HUBBLE_NICMOS, hubble_nicmos_test,
+  HUBBLE_WFPC2_1, hubble_wfpc2_1_test,
+  HUBBLE_WFPC2_2, hubble_wfcp2_2_test
+);
