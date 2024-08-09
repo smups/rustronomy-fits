@@ -24,6 +24,11 @@ use std::{
   path::Path,
 };
 
+use anyhow::{
+    bail,
+    Result
+};
+
 use crate::io_err::{self, InvalidFitsFileErr};
 
 //Get block size from root
@@ -46,7 +51,7 @@ pub struct RawFitsReader {
 }
 
 impl RawFitsReader {
-  pub(crate) fn new(path: &Path) -> Result<Self, Box<dyn Error>> {
+  pub(crate) fn new<P:AsRef<Path>>(path: P) -> Result<Self> {
     //(1) Open the file
     let f = File::open(path)?;
 
@@ -55,7 +60,7 @@ impl RawFitsReader {
 
     if meta.len() as usize % BLOCK_SIZE != 0 {
       //Throw an error for files that are not integer multiples of 2880
-      return Err(Box::new(InvalidFitsFileErr::new(io_err::FILE_BLOCK_DIV)));
+      return Err(InvalidFitsFileErr::new(io_err::FILE_BLOCK_DIV).into());
     }
     let n_blocks = meta.len() as usize / BLOCK_SIZE;
 
@@ -102,7 +107,7 @@ pub struct RawFitsWriter {
 }
 
 impl RawFitsWriter {
-  pub(crate) fn new(path: &Path) -> Result<Self, Box<dyn Error>> {
+  pub(crate) fn new(path: &Path) -> Result<Self> {
     //(1) Open the file if it exists, create it if it doesn't
     let out = File::create(path)?;
 
@@ -113,10 +118,10 @@ impl RawFitsWriter {
     Ok(RawFitsWriter { file_meta: meta, writer_handle: out })
   }
 
-  pub(crate) fn write_blocks(&mut self, buffer: &[u8]) -> Result<usize, Box<dyn Error>> {
+  pub(crate) fn write_blocks(&mut self, buffer: &[u8]) -> Result<usize> {
     //(1) Check if the buffer is an integer number of FITS blocks
     if buffer.len() % BLOCK_SIZE != 0 {
-      return Err(Box::new(InvalidFitsFileErr::new(io_err::BUF_BLOCK_DIV)));
+      return Err(InvalidFitsFileErr::new(io_err::BUF_BLOCK_DIV).into());
     }
 
     //(2) Write the thing

@@ -19,6 +19,7 @@
 
 use core::fmt;
 use std::{borrow::Cow, error::Error, fmt::Display};
+use anyhow::Result;
 
 use crate::{
   bitpix::Bitpix,
@@ -44,7 +45,7 @@ impl HeaderDataUnit {
       INTERNAL CODE
   */
 
-  pub(crate) fn decode_hdu(raw: &mut RawFitsReader) -> Result<Self, Box<dyn Error>> {
+  pub(crate) fn decode_hdu(raw: &mut RawFitsReader) -> Result<Self> {
     //(1) Read the header
     let header = Header::decode_header(raw)?;
 
@@ -84,7 +85,7 @@ impl HeaderDataUnit {
     Ok(HeaderDataUnit { header: header, data: extension })
   }
 
-  fn read_table(raw: &mut RawFitsReader, header: &Header) -> Result<Extension, Box<dyn Error>> {
+  fn read_table(raw: &mut RawFitsReader, header: &Header) -> Result<Extension> {
     /*
         To parse a table we need to know the following keywords:
             TFIELDS => #fields in a row
@@ -163,7 +164,7 @@ impl HeaderDataUnit {
               ttype_keyword.pop();
               header.get_value_as(ttype_keyword.trim())
             })
-            .collect::<Result<Vec<String>, Box<dyn Error>>>()?,
+            .collect::<Result<Vec<String>>>()?,
         )
       }
     };
@@ -183,7 +184,7 @@ impl HeaderDataUnit {
     Ok(tbl)
   }
 
-  fn read_img(raw: &mut RawFitsReader, header: &Header) -> Result<Extension, Box<dyn Error>> {
+  fn read_img(raw: &mut RawFitsReader, header: &Header) -> Result<Extension> {
     //Let's start by getting the number of axes from the NAXIS keyword
     let naxis: usize = header.get_value_as("NAXIS")?;
 
@@ -200,7 +201,7 @@ impl HeaderDataUnit {
     Ok(ImgParser::decode_img(raw, &axes, bitpix)?)
   }
 
-  pub(crate) fn encode_hdu(self, writer: &mut RawFitsWriter) -> Result<(), Box<dyn Error>> {
+  pub(crate) fn encode_hdu(self, writer: &mut RawFitsWriter) -> Result<()> {
     //(1) Write header
     self.header.encode_header(writer)?;
 

@@ -49,6 +49,21 @@ where
   }
 }
 
+impl<T> Display for Image<T>
+where
+  T: Debug + Num + Sized + Decode + Encode + Display + Clone,
+{
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    for (i,&n) in self.shape.iter().enumerate() {
+      if i > 0 {
+	write!(f,"x")?;
+      }
+      write!(f,"{}",n)?;
+    }
+    write!(f,"/{}",self.block_size)
+  }
+}
+
 impl<T> Image<T>
 where
   T: Debug + Num + Sized + Decode + Encode + Display + Clone,

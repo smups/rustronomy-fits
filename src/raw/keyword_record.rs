@@ -23,6 +23,7 @@ use std::{
   rc::Rc,
   str,
 };
+use anyhow::Result;
 
 use crate::keyword_err::{self, KeywordRecordBufferErr as KRBufErr, ProtectedKeywordErr as PKWErr};
 use rustronomy_core::data_type_traits::io_utils::Encode;
@@ -193,7 +194,7 @@ impl KeywordRecord {
     })
   }
 
-  pub(crate) fn encode_fill_buff(self, buf: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+  pub(crate) fn encode_fill_buff(self, buf: &mut Vec<u8>) -> Result<()> {
     //keep track of how long the last keyword is
     let mut one_rec_buf = Vec::new();
 

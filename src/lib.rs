@@ -17,6 +17,10 @@
     along with rustronomy.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 //Module structure
 mod bitpix;
 mod err;
