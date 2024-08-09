@@ -27,6 +27,7 @@ use std::{
   fmt::{Display, Formatter},
   path::Path,
 };
+use anyhow::Result;
 
 use crate::{
   header_data_unit::HeaderDataUnit,
@@ -42,7 +43,7 @@ pub struct Fits {
 }
 
 impl Fits {
-  pub fn open(path: &Path) -> Result<Self, Box<dyn Error>> {
+  pub fn open<P:AsRef<Path>>(path: P) -> Result<Self> {
     //(1) Construct a RawFitsReader
     let mut reader = RawFitsReader::new(path)?;
 
@@ -57,7 +58,7 @@ impl Fits {
     Ok(Fits { hdus: hdus })
   }
 
-  pub fn write(self, path: &Path) -> Result<(), Box<dyn Error>> {
+  pub fn write(self, path: &Path) -> Result<()> {
     //(1) Construct a RawFitsWriter
     let mut writer = RawFitsWriter::new(path)?;
 

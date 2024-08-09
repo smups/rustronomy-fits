@@ -26,6 +26,8 @@ use std::{
   str::{self, Utf8Error},
 };
 
+use anyhow::Result;
+
 use crate::{
   extensions::{table::column::AsciiCol, Extension},
   raw::{
@@ -49,7 +51,7 @@ impl AsciiTblParser {
     row_index_col_start: Vec<usize>,   //row index where each column starts
     field_format: Vec<String>,         //data format (incl length) of each field
     field_labels: Option<Vec<String>>, //field labels
-  ) -> Result<Extension, Box<dyn Error>> {
+  ) -> Result<Extension> {
     /*  (1)
         Tables are usually pretty small compared to images. Hence it's
         probably ok to read the whole table in one go. We should be careful
@@ -190,7 +192,7 @@ impl AsciiTblParser {
   pub(crate) fn encode_tbl(
     tbl: AsciiTable,
     writer: &mut RawFitsWriter,
-  ) -> Result<(), Box<dyn Error>> {
+  ) -> Result<()> {
     /*  Note:
         This parser assumes that certain necessary keywords to decode a HDU
         containing a table have already been set while encoding the header

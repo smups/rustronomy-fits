@@ -22,6 +22,7 @@ use std::{
   fmt::{Display, Write},
 };
 
+use anyhow::Result;
 use ndarray::{Array, IxDyn};
 
 use crate::{
@@ -128,87 +129,87 @@ impl TypedImage {
     }
   }
 
-  pub fn as_u8_array(&self) -> Result<&Array<u8, IxDyn>, Box<dyn Error>> {
+  pub fn as_u8_array(&self) -> Result<&Array<u8, IxDyn>> {
     match &self {
       Self::ByteImg(img) => Ok(img.get_data()),
-      &var => Err(Box::new(WITErr::new(var, Bitpix::byte()))),
+      &var => Err(WITErr::new(var, Bitpix::byte()).into()),
     }
   }
 
-  pub fn as_i16_array(&self) -> Result<&Array<i16, IxDyn>, Box<dyn Error>> {
+  pub fn as_i16_array(&self) -> Result<&Array<i16, IxDyn>> {
     match &self {
       Self::I16Img(img) => Ok(img.get_data()),
-      &var => Err(Box::new(WITErr::new(var, Bitpix::short()))),
+      &var => Err(WITErr::new(var, Bitpix::short()).into()),
     }
   }
 
-  pub fn as_i32_array(&self) -> Result<&Array<i32, IxDyn>, Box<dyn Error>> {
+  pub fn as_i32_array(&self) -> Result<&Array<i32, IxDyn>> {
     match &self {
       Self::I32Img(img) => Ok(img.get_data()),
-      &var => Err(Box::new(WITErr::new(var, Bitpix::int()))),
+      &var => Err(WITErr::new(var, Bitpix::int()).into()),
     }
   }
 
-  pub fn as_i64_array(&self) -> Result<&Array<i64, IxDyn>, Box<dyn Error>> {
+  pub fn as_i64_array(&self) -> Result<&Array<i64, IxDyn>> {
     match &self {
       Self::I64Img(img) => Ok(img.get_data()),
-      &var => Err(Box::new(WITErr::new(var, Bitpix::long()))),
+      &var => Err(WITErr::new(var, Bitpix::long()).into()),
     }
   }
 
-  pub fn as_f32_array(&self) -> Result<&Array<f32, IxDyn>, Box<dyn Error>> {
+  pub fn as_f32_array(&self) -> Result<&Array<f32, IxDyn>> {
     match &self {
       Self::SpfImg(img) => Ok(img.get_data()),
-      &var => Err(Box::new(WITErr::new(var, Bitpix::spf()))),
+      &var => Err(WITErr::new(var, Bitpix::spf()).into()),
     }
   }
 
-  pub fn as_f64_array(&self) -> Result<&Array<f64, IxDyn>, Box<dyn Error>> {
+  pub fn as_f64_array(&self) -> Result<&Array<f64, IxDyn>> {
     match &self {
       Self::DpfImg(img) => Ok(img.get_data()),
-      &var => Err(Box::new(WITErr::new(var, Bitpix::dpf()))),
+      &var => Err(WITErr::new(var, Bitpix::dpf()).into()),
     }
   }
 
-  pub fn as_owned_u8_array(self) -> Result<Array<u8, IxDyn>, Box<dyn Error>> {
+  pub fn as_owned_u8_array(self) -> Result<Array<u8, IxDyn>> {
     match self {
       Self::ByteImg(img) => Ok(img.get_data_owned()),
-      var => Err(Box::new(WITErr::new(&var, Bitpix::byte()))),
+      var => Err(WITErr::new(&var, Bitpix::byte()).into()),
     }
   }
 
-  pub fn as_owned_i16_array(self) -> Result<Array<i16, IxDyn>, Box<dyn Error>> {
+  pub fn as_owned_i16_array(self) -> Result<Array<i16, IxDyn>> {
     match self {
       Self::I16Img(img) => Ok(img.get_data_owned()),
-      var => Err(Box::new(WITErr::new(&var, Bitpix::short()))),
+      var => Err(WITErr::new(&var, Bitpix::short()).into()),
     }
   }
 
-  pub fn as_owned_i32_array(self) -> Result<Array<i32, IxDyn>, Box<dyn Error>> {
+  pub fn as_owned_i32_array(self) -> Result<Array<i32, IxDyn>> {
     match self {
       Self::I32Img(img) => Ok(img.get_data_owned()),
-      var => Err(Box::new(WITErr::new(&var, Bitpix::int()))),
+      var => Err(WITErr::new(&var, Bitpix::int()).into()),
     }
   }
 
-  pub fn as_owned_i64_array(self) -> Result<Array<i64, IxDyn>, Box<dyn Error>> {
+  pub fn as_owned_i64_array(self) -> Result<Array<i64, IxDyn>> {
     match self {
       Self::I64Img(img) => Ok(img.get_data_owned()),
-      var => Err(Box::new(WITErr::new(&var, Bitpix::long()))),
+      var => Err(WITErr::new(&var, Bitpix::long()).into()),
     }
   }
 
-  pub fn as_owned_f32_array(self) -> Result<Array<f32, IxDyn>, Box<dyn Error>> {
+  pub fn as_owned_f32_array(self) -> Result<Array<f32, IxDyn>> {
     match self {
       Self::SpfImg(img) => Ok(img.get_data_owned()),
-      var => Err(Box::new(WITErr::new(&var, Bitpix::spf()))),
+      var => Err(WITErr::new(&var, Bitpix::spf()).into()),
     }
   }
 
-  pub fn as_owned_f64_array(self) -> Result<Array<f64, IxDyn>, Box<dyn Error>> {
+  pub fn as_owned_f64_array(self) -> Result<Array<f64, IxDyn>> {
     match self {
       Self::DpfImg(img) => Ok(img.get_data_owned()),
-      var => Err(Box::new(WITErr::new(&var, Bitpix::dpf()))),
+      var => Err(WITErr::new(&var, Bitpix::dpf()).into()),
     }
   }
 }

@@ -18,6 +18,7 @@
 */
 
 use std::error::Error;
+use anyhow::Result;
 
 use crate::header_err::{self, HeaderBlockBufferErr as HBBErr};
 
@@ -66,14 +67,14 @@ impl HeaderBlock {
     return Ok((HeaderBlock { records: records }, is_final));
   }
 
-  pub(crate) fn encode_fill_buff(self, buf: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+  pub(crate) fn encode_fill_buff(self, buf: &mut Vec<u8>) -> Result<()> {
     for record in self.records {
       record.encode_fill_buff(buf)?;
     }
     Ok(())
   }
 
-  pub(crate) fn encode_to_bytes(self) -> Result<Vec<u8>, Box<dyn Error>> {
+  pub(crate) fn encode_to_bytes(self) -> Result<Vec<u8>> {
     //Fill buf with data
     let mut buf: Vec<u8> = Vec::new();
     self.encode_fill_buff(&mut buf)?;
@@ -84,7 +85,7 @@ impl HeaderBlock {
       buf.append(&mut vec![0u8; 2880 - buf.len()]);
       return Ok(buf);
     } else if buf.len() > 2880 {
-      return Err(Box::new(HBBErr::new(header_err::BUFFER_LEN)));
+      return Err(HBBErr::new(header_err::BUFFER_LEN).into());
     } else {
       return Ok(buf);
     }

@@ -49,6 +49,8 @@
 
 use std::{error::Error, fmt::Display, path::Path};
 
+use anyhow::{Result};
+
 use rustronomy_core::universal_containers::*;
 
 use super::hdu::Hdu;
@@ -60,7 +62,7 @@ pub struct Fits {
 }
 
 impl Fits {
-  pub fn read(path: &Path) -> Result<Self, Box<dyn Error>> {
+  pub fn read(path: &Path) -> Result<Self> {
     //(1) First we try to open the file
     let mut reader = crate::intern::FitsReader::new(path)?;
 
@@ -68,7 +70,7 @@ impl Fits {
     let (global_tags, hdu0) = crate::intern::read_primary_hdu(&mut reader)?;
     todo!()
   }
-  pub fn write(self, path: &Path) -> Result<(), Box<dyn Error>> {
+  pub fn write(self, path: &Path) -> Result<()> {
     todo!()
   }
   pub fn empty() -> Self {

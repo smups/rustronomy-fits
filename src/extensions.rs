@@ -22,6 +22,8 @@ use std::{
   fmt::{Display, Formatter},
 };
 
+use anyhow::Result;
+
 use crate::{
   io_err::{self, InvalidFitsFileErr as IFFErr},
   raw::{raw_io::RawFitsWriter, BlockSized},
@@ -72,10 +74,10 @@ impl Display for Extension {
 }
 
 impl Extension {
-  pub(crate) fn write_to_buffer(self, writer: &mut RawFitsWriter) -> Result<(), Box<dyn Error>> {
+  pub(crate) fn write_to_buffer(self, writer: &mut RawFitsWriter) -> Result<()> {
     use Extension::*;
     match self {
-      Corrupted => return Err(Box::new(IFFErr::new(io_err::CORRUPTED))),
+      Corrupted => return Err(IFFErr::new(io_err::CORRUPTED).into()),
       Image(img) => ImgParser::encode_img(img, writer),
       AsciiTable(tbl) => AsciiTblParser::encode_tbl(tbl, writer),
     }

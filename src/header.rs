@@ -24,6 +24,8 @@ use std::{
   str::FromStr,
 };
 
+use anyhow::Result;
+
 use chrono::{Datelike, Utc};
 use indexmap::IndexMap;
 
@@ -50,7 +52,7 @@ pub struct Header {
 }
 
 impl Header {
-  pub fn decode_header(raw: &mut RawFitsReader) -> Result<Self, Box<dyn Error>> {
+  pub fn decode_header(raw: &mut RawFitsReader) -> Result<Self> {
     /*  Setup:
         We'll keep reading headerblocks (= FITS blocks) until we encounter
         the END keyword. We'll also have to keep track of the block size of
@@ -75,7 +77,7 @@ impl Header {
     Ok(Self::from_parts(hbs, block_len)?)
   }
 
-  fn from_parts(hbs: Vec<HeaderBlock>, block_len: usize) -> Result<Self, Box<dyn Error>> {
+  fn from_parts(hbs: Vec<HeaderBlock>, block_len: usize) -> Result<Self> {
     //Parse the Keywordrecords to plain Key-Data pairs
     let mut parsed_map: IndexMap<Rc<String>, KeywordRecord> = IndexMap::new();
 
@@ -116,7 +118,7 @@ impl Header {
     Ok(Header { records: parsed_map, block_len: block_len })
   }
 
-  pub fn encode_header(self, writer: &mut RawFitsWriter) -> Result<(), Box<dyn Error>> {
+  pub fn encode_header(self, writer: &mut RawFitsWriter) -> Result<()> {
     //Buffer to write whole header in one go.
     //Also keeps track of number of bytes we wrote to the header!
     let mut buf = Vec::new();
@@ -207,10 +209,10 @@ impl Header {
   }
 
   //Helper function for parsing keyword records
-  pub fn get_value_as<T>(&self, keyword: &str) -> Result<T, Box<dyn Error>>
+  pub fn get_value_as<T>(&self, keyword: &str) -> Result<T>
   where
     T: FromStr,
-    <T as FromStr>::Err: 'static + Error,
+    <T as FromStr>::Err: 'static + Error + Send + Sync,
   {
     match self.get_value(&keyword.to_string()) {
       None => Err(MissingRecordError::new(keyword))?,

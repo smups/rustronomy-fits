@@ -1,6 +1,8 @@
 //Std imports
 use std::error::Error;
 
+use anyhow::Result;
+
 //external imports
 use rustronomy_core::universal_containers::*;
 
@@ -27,7 +29,7 @@ pub struct FitsOptions {
 
 pub fn read_primary_hdu(
   reader: &mut FitsReader,
-) -> Result<(meta_only::MetaOnly, Hdu), Box<dyn Error>> {
+) -> Result<(meta_only::MetaOnly, Hdu)> {
   //Max. number of records in a FITS block
   const MAX_RECS: usize = crate::BLOCK_SIZE / crate::RECORD_SIZE;
 

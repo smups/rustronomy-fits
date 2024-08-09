@@ -22,6 +22,8 @@ use std::{
   fmt::{self, Display, Formatter},
 };
 
+use anyhow::Result;
+
 use crate::{
   extensions::ExtensionPrint,
   raw::{table_entry_format::TableEntryFormat, BlockSized},
@@ -138,10 +140,10 @@ impl AsciiTable {
     AsciiTable { cols: cols, block_size: Some(size) }
   }
 
-  pub(crate) fn add_row(&mut self, row: Vec<TableEntry>) -> Result<(), Box<dyn Error>> {
+  pub(crate) fn add_row(&mut self, row: Vec<TableEntry>) -> Result<()> {
     //Adds row to table
     if row.len() != self.cols.len() {
-      return Err(Box::new(ShapeMisMatchErr::new(&row, &self)));
+      return Err(ShapeMisMatchErr::new(&row, &self).into());
     }
 
     //Add row to the table

@@ -30,6 +30,8 @@ use std::{
   mem::size_of,
 };
 
+use anyhow::Result;
+
 //Rustronomy Imports
 use rustronomy_core::data_type_traits::io_utils::{Decode, Encode};
 
@@ -60,7 +62,7 @@ impl ImgParser {
     reader: &mut RawFitsReader,
     shape: &Vec<usize>,
     bitpix: Bitpix,
-  ) -> Result<Extension, Box<dyn Error>> {
+  ) -> Result<Extension> {
     use Bitpix::*;
     use TypedImage::*;
 
@@ -77,7 +79,7 @@ impl ImgParser {
   fn decode_helper<T>(
     reader: &mut RawFitsReader,
     shape: &Vec<usize>,
-  ) -> Result<Image<T>, Box<dyn Error>>
+  ) -> Result<Image<T>>
   where
     T: Debug + Num + Sized + Decode + Encode + Display + Clone + Send,
   {
@@ -156,7 +158,7 @@ impl ImgParser {
   pub(crate) fn encode_img(
     typed_img: TypedImage,
     writer: &mut RawFitsWriter,
-  ) -> Result<(), Box<dyn Error>> {
+  ) -> Result<()> {
     //This function only matches the typed image and calls the appropriate
     //helper function
     use TypedImage::*;
@@ -174,7 +176,7 @@ impl ImgParser {
     Ok(())
   }
 
-  fn encode_helper<T>(img: Image<T>, writer: &mut RawFitsWriter) -> Result<(), Box<dyn Error>>
+  fn encode_helper<T>(img: Image<T>, writer: &mut RawFitsWriter) -> Result<()>
   where
     T: Debug + Num + Sized + Decode + Encode + Display + Clone,
   {
@@ -207,7 +209,7 @@ impl ImgParser {
         match img.get_data().as_slice_memory_order() {
           None => {
             //Data is NOT continuous, return error!
-            return Err(Box::new(IMLErr::new()));
+            return Err(IMLErr::new().into());
           }
           _ => {} //Data IS continuous, continue!
         }
